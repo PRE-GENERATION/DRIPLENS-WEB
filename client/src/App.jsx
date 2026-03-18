@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import ExplorePage from './pages/ExplorePage';
@@ -26,6 +27,7 @@ function App() {
               <Route path="/messages" element={<MessagingPage />} />
             </Routes>
           </main>
+          <Footer />
         </div>
       </ClickSpark>
     </Router>

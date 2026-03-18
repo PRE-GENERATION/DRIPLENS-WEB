@@ -69,10 +69,10 @@ const StyledWrapper = styled.div`
   }
 
   .btn-12 {
-    border-radius: 99rem;
+    border-radius: 0;
     border-width: 2px;
     overflow: hidden;
-    padding: 0.8rem 3rem;
+    padding: 1rem 3rem;
     position: relative;
   }
 

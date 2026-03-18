@@ -8,7 +8,7 @@
   --color-brand-label: #999999;
   --color-brand-border: #E5E5E5;
 
-  --font-poppins: 'Poppins', sans-serif;
+  --font-heading: 'Space Grotesk', sans-serif;
   --font-inter: 'Inter', sans-serif;
 }
 
@@ -19,39 +19,52 @@
     font-family: var(--font-inter);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    line-height: 1.6;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-poppins);
+    font-family: var(--font-heading);
     color: var(--color-brand-headings);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    line-height: 1.1;
+  }
+
+  h2 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    line-height: 1.2;
   }
 }
 
 @layer components {
   .driplens-card {
-    @apply bg-white border border-[#E5E5E5] rounded-[12px] shadow-sm;
-    transition: all 0.3s ease-in-out;
+    @apply bg-white border border-[#E5E5E5] rounded-none;
+    transition: all 0.2s ease;
   }
 
   .driplens-card:hover {
-    @apply shadow-xl -translate-y-[4px];
+    @apply border-black;
   }
 
   .btn-primary {
-    @apply bg-black text-white rounded-[8px] font-bold px-4 py-2;
-    transition: opacity 0.2s ease;
+    @apply bg-black text-white rounded-none font-bold px-6 py-3 uppercase tracking-wider text-sm;
+    transition: all 0.2s ease;
   }
 
   .btn-primary:hover {
-    @apply opacity-90;
+    @apply opacity-90 -translate-y-[2px];
   }
 
   .btn-secondary {
-    @apply bg-white text-black border border-black rounded-[8px] px-4 py-2;
-    transition: background-color 0.2s ease;
+    @apply bg-white text-black border border-black rounded-none px-6 py-3 font-bold uppercase tracking-wider text-sm;
+    transition: all 0.2s ease;
   }
 
   .btn-secondary:hover {
-    @apply bg-gray-50;
+    @apply bg-black text-white;
   }
 }
