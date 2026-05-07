@@ -103,6 +103,20 @@ router.post(
   }
 );
 
+// POST /api/v1/upload/resume — portfolio document (PDF/DOC)
+router.post(
+  '/resume',
+  requireAuth,
+  uploadLimiter,
+  upload.single('resume'),
+  async (req, res, next) => {
+    try {
+      const { publicUrl } = await uploadService.uploadProfileImage(req.user.id, req.file, 'resume');
+      res.json({ success: true, data: { publicUrl } });
+    } catch (err) { next(err); }
+  }
+);
+
 const paginationSchema = listCreatorsSchema.pick({ page: true, limit: true }).extend({
   creator_id: z.string().uuid().optional()
 });
