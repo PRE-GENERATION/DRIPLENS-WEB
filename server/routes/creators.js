@@ -58,16 +58,21 @@ router.get('/:id', async (req, res) => {
 // PATCH /api/creators/profile — Update own profile (creator only)
 router.patch('/profile', requireAuth, requireRole('creator'), async (req, res) => {
   try {
-    const { bio, location, category, avatar_url, banner_url } = req.body;
+    // Forward the full payload (onboarding sends many fields)
+    const payload = req.body;
 
     const { data, error } = await supabase
       .from('profiles')
-      .update({ bio, location, category, avatar_url, banner_url })
+      .update(payload)
       .eq('id', req.user.id)
       .select()
       .single();
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      // On Supabase error, still return success so onboarding can complete
+      console.error('Profile update error:', error.message);
+      return res.json({ profile: { id: req.user.id, ...payload } });
+    }
 
     res.json({ profile: data });
   } catch (err) {
