@@ -407,7 +407,7 @@ function Step3({ onNext, onBack }) {
         />
       ))}
 
-      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={data.tags.length === 0 || !data.qualifications.some(q => q.trim()) || !data.past_work.some(p => p.trim())} />
+      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={false} />
     </div>
   );
 }
@@ -494,7 +494,7 @@ function Step4({ onNext, onBack }) {
 
       <p style={{ fontSize: 11, color: '#999', fontFamily: 'Poppins, sans-serif', marginTop: 16, fontStyle: 'italic' }}>You can change all of this anytime from your dashboard.</p>
 
-      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={!data.min_budget || !data.max_budget || data.preferred_work_type.length === 0} />
+      <NavButtons onBack={onBack} onNext={onNext} nextDisabled={false} />
     </div>
   );
 }
@@ -666,7 +666,7 @@ function Step5({ onBack, onSubmit, loading }) {
         />
       </div>
 
-      <NavButtons onBack={onBack} onNext={onSubmit} nextLabel="Complete My Profile" loading={loading} nextDisabled={!data.location?.trim() || !data.bio?.trim() || !data.website?.trim() || uploadingAvatar || uploadingResume} />
+      <NavButtons onBack={onBack} onNext={onSubmit} nextLabel="Complete My Profile" loading={loading} nextDisabled={uploadingAvatar || uploadingResume} />
 
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes spin {

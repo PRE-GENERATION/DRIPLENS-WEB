@@ -3,12 +3,49 @@ import multer from 'multer';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { uploadLimiter, apiLimiter } from '../../middleware/rateLimiter.js';
 import { validate } from '../../middleware/validate.js';
-import { uploadMetaSchema } from '../../schemas/uploadSchemas.js';
+import { uploadMetaSchema, createPortfolioProjectSchema, updatePortfolioProjectSchema } from '../../schemas/uploadSchemas.js';
 import { listCreatorsSchema } from '../../schemas/creatorSchemas.js';
 import * as uploadService from '../../services/uploadService.js';
 import { z } from 'zod';
 
 const router = Router();
+
+// ── Projects ──────────────────────────────────────────────────────────
+
+router.get('/projects', requireAuth, apiLimiter, async (req, res, next) => {
+  try {
+    const projects = await uploadService.listPortfolioProjects(req.user.id);
+    res.json({ success: true, data: projects });
+  } catch (err) { next(err); }
+});
+
+router.post(
+  '/projects',
+  requireAuth,
+  requireRole('creator'),
+  apiLimiter,
+  validate(createPortfolioProjectSchema),
+  async (req, res, next) => {
+    try {
+      const project = await uploadService.createPortfolioProject(req.user.id, req.body);
+      res.status(201).json({ success: true, data: project });
+    } catch (err) { next(err); }
+  }
+);
+
+router.patch(
+  '/projects/:id',
+  requireAuth,
+  requireRole('creator'),
+  apiLimiter,
+  validate(updatePortfolioProjectSchema),
+  async (req, res, next) => {
+    try {
+      const project = await uploadService.updatePortfolioProject(req.params.id, req.user.id, req.body);
+      res.json({ success: true, data: project });
+    } catch (err) { next(err); }
+  }
+);
 
 // File size limit enforced at multer level — 500MB hard cap
 const upload = multer({
@@ -21,12 +58,21 @@ router.post(
   requireAuth,
   requireRole('creator'),
   uploadLimiter,
-  upload.single('media'),
+  upload.array('media', 20), // Support up to 20 files at once
   validate(uploadMetaSchema),
   async (req, res, next) => {
     try {
-      const item = await uploadService.uploadPortfolio(req.user.id, req.file, req.body);
-      res.status(201).json({ success: true, data: { item } });
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ success: false, error: { code: 'NO_FILES', message: 'No files uploaded' } });
+      }
+
+      const results = [];
+      for (const file of req.files) {
+        const item = await uploadService.uploadPortfolio(req.user.id, file, req.body);
+        results.push(item);
+      }
+
+      res.status(201).json({ success: true, data: { items: results } });
     } catch (err) { next(err); }
   }
 );
@@ -64,6 +110,20 @@ const paginationSchema = listCreatorsSchema.pick({ page: true, limit: true }).ex
 router.get('/', apiLimiter, validate(paginationSchema, 'query'), async (req, res, next) => {
   try {
     const result = await uploadService.listPortfolio(req.query);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
+
+router.delete('/projects/:id', requireAuth, requireRole('creator'), apiLimiter, async (req, res, next) => {
+  try {
+    const result = await uploadService.deletePortfolioProject(req.params.id, req.user.id);
+    res.json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
+
+router.delete('/portfolio/:id', requireAuth, requireRole('creator'), apiLimiter, async (req, res, next) => {
+  try {
+    const result = await uploadService.deletePortfolioItem(req.params.id, req.user.id);
     res.json({ success: true, data: result });
   } catch (err) { next(err); }
 });

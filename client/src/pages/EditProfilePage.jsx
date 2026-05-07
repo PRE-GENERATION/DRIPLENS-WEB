@@ -2,6 +2,19 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
+import { 
+  Instagram, 
+  Twitter, 
+  Linkedin, 
+  Globe, 
+  Plus, 
+  Info,
+  DollarSign,
+  Users,
+  Target,
+  Hash,
+  Briefcase
+} from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,6 +57,7 @@ export default function EditProfilePage() {
     banner_url: '',
     instagram: '',
     twitter: '',
+    linkedin: '',
     website: '',
     min_budget: 0,
     max_budget: 10000,
@@ -78,6 +92,7 @@ export default function EditProfilePage() {
           banner_url: creator.banner_url || '',
           instagram: creator.instagram || '',
           twitter: creator.twitter || '',
+          linkedin: creator.linkedin || '',
           website: creator.website || '',
           min_budget: creator.min_budget || 0,
           max_budget: creator.max_budget || 10000,
@@ -272,6 +287,7 @@ export default function EditProfilePage() {
         location:      formData.location,
         instagram:     formData.instagram,
         twitter:       formData.twitter,
+        linkedin:      formData.linkedin,
         website:       formData.website,
         avatar_url:    avatarUrl,
         banner_url:    bannerUrl,
@@ -289,7 +305,7 @@ export default function EditProfilePage() {
       await api.patch('/creators/profile', payload);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setTimeout(() => {
-        navigate(`/dashboard/${user.role}`);
+        navigate('/profile/me');
       }, 1500);
     } catch (err) {
       setMessage({ type: 'error', text: err.message || 'Failed to update profile' });
@@ -298,17 +314,48 @@ export default function EditProfilePage() {
     }
   };
 
-  const inputClass = (field) =>
-    `w-full border-b py-3 focus:outline-none transition-colors bg-transparent text-black placeholder:text-[#CCC] ${
-      errors[field] ? 'border-red-400' : 'border-[#DDD] focus:border-black'
-    }`;
+  const handleCancel = () => navigate('/profile/me');
+
+  const cardStyle = {
+    background: '#FFFFFF',
+    border: '1px solid #E5E7EB',
+    borderRadius: '8px',
+    padding: '32px',
+    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05), 0px 0px 0px 1px rgba(0, 0, 0, 0.05)',
+    marginBottom: '32px'
+  };
+
+  const inputStyle = { 
+    width: '100%', 
+    border: '1px solid #D1D5DB', 
+    borderRadius: '6px', 
+    padding: '12px 16px', 
+    fontSize: '14px', 
+    color: '#111111', 
+    background: '#FFFFFF', 
+    outline: 'none',
+    transition: 'all 0.3s ease',
+    fontFamily: "'Inter', sans-serif"
+  };
+
+  const labelStyle = { 
+    fontSize: '14px', 
+    color: '#555555', 
+    fontWeight: '500',
+    marginBottom: '8px',
+    display: 'block',
+    fontFamily: "'Inter', sans-serif"
+  };
+
+  const focusStyle = "focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6] focus:ring-opacity-20";
 
   if (initialLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-20 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#666]">Loading profile...</p>
+      <div style={{ minHeight: '100vh', background: '#F8F9FC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', sans-serif" }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '24px', height: '24px', border: '2px solid #3B50E0', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: "'Inter', sans-serif" }}>Loading profile...</p>
         </div>
       </div>
     );
@@ -321,342 +368,373 @@ export default function EditProfilePage() {
         <meta name="description" content="Edit your Driplens profile" />
       </Helmet>
 
-      <div className="max-w-4xl mx-auto px-4 py-10 min-h-screen">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-4xl font-bold text-black mb-2 tracking-tight">Edit Profile</h1>
-          <p className="text-[#666] mb-12 text-sm">
-            {isCreator ? 'Showcase your work and let brands find you.' : 'Tell creators about your brand and what you\'re looking for.'}
-          </p>
+      <div style={{ minHeight: '100vh', background: '#F9FAFB', display: 'flex', flexDirection: 'column', fontFamily: "'Inter', sans-serif" }}>
 
-          {/* Banner Upload */}
-          <div className="mb-12">
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-4">
-              Banner Image
-            </label>
-            <div
-              onDragEnter={handleBannerDrag}
-              onDragLeave={handleBannerDrag}
-              onDragOver={handleBannerDrag}
-              onDrop={handleBannerDrop}
-              onClick={() => bannerInputRef.current?.click()}
-              className={`aspect-[3/1] border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center p-8 relative overflow-hidden ${
-                dragActiveBanner ? 'border-black bg-gray-50' : 'border-[#DDD] bg-white hover:border-black'
-              }`}
-            >
-              <input
-                type="file"
-                className="hidden"
-                ref={bannerInputRef}
-                onChange={handleBannerChange}
-                accept="image/*"
-              />
-              {bannerPreview ? (
-                <img src={bannerPreview} alt="Banner Preview" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <>
-                  <svg className="w-10 h-10 text-[#CCC] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <p className="text-xs font-bold uppercase tracking-widest text-black mb-1">Drag & Drop or Click</p>
-                  <p className="text-[10px] text-[#999]">Recommended: 1200×400px</p>
-                </>
-              )}
-            </div>
-            {errors.banner && <p className="text-red-500 text-xs mt-2">{errors.banner}</p>}
-          </div>
+        {/* BODY */}
+        <div style={{ display: 'flex', flex: 1, maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '48px 24px' }}>
 
-          {/* Avatar Upload */}
-          <div className="mb-12">
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-4">
-              Avatar Image
-            </label>
-            <div
-              onDragEnter={handleAvatarDrag}
-              onDragLeave={handleAvatarDrag}
-              onDragOver={handleAvatarDrag}
-              onDrop={handleAvatarDrop}
-              onClick={() => avatarInputRef.current?.click()}
-              className={`w-32 h-32 border-2 border-dashed transition-all cursor-pointer flex items-center justify-center relative overflow-hidden rounded-lg ${
-                dragActiveAvatar ? 'border-black bg-gray-50' : 'border-[#DDD] bg-white hover:border-black'
-              }`}
-            >
-              <input
-                type="file"
-                className="hidden"
-                ref={avatarInputRef}
-                onChange={handleAvatarChange}
-                accept="image/*"
-              />
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar Preview" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <>
-                  <svg className="w-8 h-8 text-[#CCC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v16m8-8H4" />
-                  </svg>
-                </>
-              )}
-            </div>
-            <p className="text-[10px] text-[#999] mt-2">Square image recommended (500×500px)</p>
-            {errors.avatar && <p className="text-red-500 text-xs mt-2">{errors.avatar}</p>}
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
+          <div style={{ flex: 1 }}>
+            
             <AnimatePresence>
               {message.text && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className={`text-xs font-bold uppercase tracking-widest p-4 ${
-                    message.type === 'error'
-                      ? 'bg-red-50 text-red-600 border border-red-200'
-                      : 'bg-green-50 text-green-600 border border-green-200'
-                  }`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  style={{ 
+                    padding: '12px 16px', 
+                    borderRadius: '8px', 
+                    fontSize: '14px',
+                    marginBottom: '24px',
+                    background: message.type === 'error' ? '#FEF2F2' : '#F0FDF4',
+                    color: message.type === 'error' ? '#991B1B' : '#166534',
+                    border: `1px solid ${message.type === 'error' ? '#FEE2E2' : '#DCFCE7'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '500'
+                  }}
                 >
                   {message.text}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Bio */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                Bio {formData.bio.length > 0 && <span className="text-[#CCC] font-normal">({formData.bio.length}/500)</span>}
-              </label>
-              <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                placeholder="Tell your story..."
-                rows="4"
-                className={`w-full border rounded p-3 focus:outline-none transition-colors resize-none bg-transparent ${
-                  errors.bio ? 'border-red-400' : 'border-[#DDD] focus:border-black'
-                }`}
-                maxLength="500"
-              />
-              {errors.bio && <p className="text-red-500 text-xs mt-2">{errors.bio}</p>}
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                {isCreator ? 'Specialty' : 'Industry'}
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className={`w-full border-b py-3 bg-transparent focus:outline-none transition-colors appearance-none ${
-                  errors.category ? 'border-red-400' : 'border-[#DDD] focus:border-black'
-                }`}
-              >
-                <option value="">Select a category...</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-              {errors.category && <p className="text-red-500 text-xs mt-2">{errors.category}</p>}
-            </div>
-
-            {/* Location */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                Location
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                placeholder="City, Country"
-                className={inputClass('location')}
-              />
-              {errors.location && <p className="text-red-500 text-xs mt-2">{errors.location}</p>}
-            </div>
-
-            {/* Social Links */}
-            <div className="pt-4 border-t border-[#EEE]">
-              <h3 className="text-sm font-bold text-black mb-6">Social Links (Optional)</h3>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Instagram Handle
-                  </label>
-                  <input
-                    type="text"
-                    name="instagram"
-                    value={formData.instagram}
-                    onChange={handleInputChange}
-                    placeholder="yourhandle (without the @)"
-                    className={inputClass('instagram')}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Twitter/X Handle
-                  </label>
-                  <input
-                    type="text"
-                    name="twitter"
-                    value={formData.twitter}
-                    onChange={handleInputChange}
-                    placeholder="yourhandle (without the @)"
-                    className={inputClass('twitter')}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Website
-                  </label>
-                  <input
-                    type="url"
-                    name="website"
-                    value={formData.website}
-                    onChange={handleInputChange}
-                    placeholder="https://yourwebsite.com"
-                    className={inputClass('website')}
-                  />
-                  {errors.website && <p className="text-red-500 text-xs mt-2">{errors.website}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* Creator Specific Settings */}
-            {isCreator && (
-              <div className="pt-4 border-t border-[#EEE] space-y-8">
-                <h3 className="text-sm font-bold text-black">Creator Discovery Settings</h3>
+            {/* COMBINED SECTION — SOCIAL & DISCOVERY */}
+            <div style={cardStyle}>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                      Min Budget ($)
-                    </label>
-                    <input
-                      type="number"
-                      name="min_budget"
-                      value={formData.min_budget}
-                      onChange={handleInputChange}
-                      className={inputClass('min_budget')}
-                    />
-                    {errors.min_budget && <p className="text-red-500 text-xs mt-2">{errors.min_budget}</p>}
+                {/* Left Column: Social Profiles */}
+                <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-[#F0F0F0] pb-10 lg:pb-0 lg:pr-10">
+                  <div style={{ marginBottom: '32px' }}>
+                    <div style={{ fontSize: '20px', color: '#111111', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Globe className="w-5 h-5 text-brand-accent" /> Social Profiles
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.5' }}>
+                      Connect your social profiles to boost visibility and help brands find your work easily.
+                    </p>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                      Max Budget ($)
-                    </label>
-                    <input
-                      type="number"
-                      name="max_budget"
-                      value={formData.max_budget}
-                      onChange={handleInputChange}
-                      className={inputClass('max_budget')}
-                    />
-                    {errors.max_budget && <p className="text-red-500 text-xs mt-2">{errors.max_budget}</p>}
+
+                  <div className="space-y-6">
+                    {/* Instagram */}
+                    <div className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-pink-50 rounded-lg group-focus-within:bg-pink-500 group-focus-within:text-white transition-all">
+                            <Instagram className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#374151]">Instagram</span>
+                        </div>
+                        {!formData.instagram && (
+                          <span className="text-[10px] font-bold text-pink-500 uppercase tracking-wider">Required</span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="instagram"
+                          value={formData.instagram}
+                          onChange={handleInputChange}
+                          placeholder="your_username"
+                          className={focusStyle}
+                          style={{ ...inputStyle, paddingLeft: '40px' }}
+                        />
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
+                      </div>
+                    </div>
+
+                    {/* Twitter/X */}
+                    <div className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-zinc-100 rounded-lg group-focus-within:bg-black group-focus-within:text-white transition-all">
+                            <Twitter className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#374151]">Twitter / X</span>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="twitter"
+                          value={formData.twitter}
+                          onChange={handleInputChange}
+                          placeholder="your_handle"
+                          className={focusStyle}
+                          style={{ ...inputStyle, paddingLeft: '40px' }}
+                        />
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
+                      </div>
+                    </div>
+
+                    {/* LinkedIn */}
+                    <div className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-50 rounded-lg group-focus-within:bg-blue-600 group-focus-within:text-white transition-all">
+                            <Linkedin className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#374151]">LinkedIn</span>
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        name="linkedin"
+                        value={formData.linkedin}
+                        onChange={handleInputChange}
+                        placeholder="linkedin.com/in/yourprofile"
+                        className={focusStyle}
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* Website */}
+                    <div className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-50 rounded-lg group-focus-within:bg-indigo-600 group-focus-within:text-white transition-all">
+                            <Globe className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#374151]">Portfolio Website</span>
+                        </div>
+                      </div>
+                      <input
+                        type="url"
+                        name="website"
+                        value={formData.website}
+                        onChange={handleInputChange}
+                        placeholder="https://yourwork.com"
+                        className={focusStyle}
+                        style={inputStyle}
+                      />
+                      {errors.website && <p style={{ color: '#EF4444', fontSize: '11px', marginTop: '6px' }}>{errors.website}</p>}
+                    </div>
+
+                    <div className="pt-4 mt-8 bg-zinc-50 p-4 rounded-xl border border-dashed border-zinc-200">
+                      <div className="flex gap-3">
+                        <Info className="w-4 h-4 text-brand-accent mt-0.5" />
+                        <p className="text-[12px] text-[#4B5563] leading-relaxed">
+                          <span className="font-bold text-brand-accent">Pro Tip:</span> Linked profiles are shown on your public portfolio to build trust with potential clients.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Follower Count
-                  </label>
-                  <input
-                    type="number"
-                    name="follower_count"
-                    value={formData.follower_count}
-                    onChange={handleInputChange}
-                    className={inputClass('follower_count')}
-                  />
-                  {errors.follower_count && <p className="text-red-500 text-xs mt-2">{errors.follower_count}</p>}
-                </div>
+                {/* Right Column: Discovery Details */}
+                {isCreator && (
+                  <div className="lg:col-span-7">
+                    <div style={{ marginBottom: '32px' }}>
+                      <div style={{ fontSize: '20px', color: '#111111', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Target className="w-5 h-5 text-brand-accent" /> Discovery Details
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.5' }}>
+                        Set your preferences to help brands find and hire you based on their specific needs.
+                      </p>
+                    </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-4">
-                    Platforms
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Instagram', 'TikTok', 'YouTube', 'Twitter', 'Twitch', 'LinkedIn'].map(plt => (
-                      <button
-                        key={plt}
-                        type="button"
-                        onClick={() => handlePlatformToggle(plt)}
-                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                          formData.platforms.includes(plt)
-                            ? 'bg-black border-black text-white shadow-lg'
-                            : 'bg-white border-gray-100 text-gray-400 hover:border-black hover:text-black'
-                        }`}
+                    <div className="grid grid-cols-2 gap-6 mb-8">
+                      <div>
+                        <label style={labelStyle}>
+                          <span className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5" /> Min Budget ($)</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="min_budget"
+                          value={formData.min_budget}
+                          onChange={handleInputChange}
+                          placeholder="500"
+                          className={focusStyle}
+                          style={inputStyle}
+                        />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>
+                          <span className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5" /> Max Budget ($)</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="max_budget"
+                          value={formData.max_budget}
+                          onChange={handleInputChange}
+                          placeholder="5000"
+                          className={focusStyle}
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mb-8">
+                      <label style={labelStyle}>
+                        <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5" /> Total Follower Count</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="follower_count"
+                        value={formData.follower_count}
+                        onChange={handleInputChange}
+                        placeholder="10000"
+                        className={focusStyle}
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    <div className="mb-8">
+                      <label style={labelStyle}>
+                        <span className="flex items-center gap-2"><Globe className="w-3.5 h-3.5" /> Active Platforms</span>
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                        {['Instagram', 'TikTok', 'YouTube', 'Twitter', 'Twitch', 'LinkedIn'].map(plt => {
+                          const isSelected = formData.platforms.includes(plt);
+                          return (
+                            <button
+                              key={plt}
+                              type="button"
+                              onClick={() => handlePlatformToggle(plt)}
+                              className="transition-all duration-200 active:scale-95"
+                              style={{
+                                padding: '8px 16px',
+                                borderRadius: '12px',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                border: isSelected ? 'none' : '1px solid #E5E7EB',
+                                background: isSelected ? '#3B82F6' : '#FFFFFF',
+                                color: isSelected ? '#FFFFFF' : '#4B5563',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.25)' : 'none'
+                              }}
+                            >
+                              {plt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="mb-8">
+                      <label style={labelStyle}>
+                        <span className="flex items-center gap-2"><Hash className="w-3.5 h-3.5" /> Expertise Tags</span>
+                      </label>
+                      <div style={{ 
+                        ...inputStyle, 
+                        display: 'flex', 
+                        flexWrap: 'wrap', 
+                        gap: '6px', 
+                        padding: '8px',
+                        minHeight: '48px',
+                        alignItems: 'center',
+                        cursor: 'text',
+                        borderRadius: '12px'
+                      }} onClick={() => document.getElementById('tags-input').focus()}>
+                        {formData.tags.map(tag => (
+                          <span
+                            key={tag}
+                            style={{
+                              background: '#3B82F6',
+                              color: '#FFFFFF',
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFormData(p => ({ ...p, tags: p.tags.filter(t => t !== tag) }));
+                              }}
+                              style={{ border: 'none', background: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '0', fontSize: '14px', opacity: 0.8 }}
+                            >
+                              &times;
+                            </button>
+                          </span>
+                        ))}
+                        <input
+                          id="tags-input"
+                          type="text"
+                          placeholder={formData.tags.length === 0 ? "add tags..." : ""}
+                          style={{ 
+                            border: 'none', 
+                            outline: 'none', 
+                            fontSize: '13px', 
+                            flex: 1, 
+                            minWidth: '100px',
+                            background: 'transparent'
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === ',' || e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = e.target.value.trim().replace(/,$/, '');
+                              if (val && !formData.tags.includes(val)) {
+                                setFormData(p => ({ ...p, tags: [...p.tags, val] }));
+                                e.target.value = '';
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-lg text-white">
+                          <Briefcase className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-blue-900 leading-none mb-1">Availability</p>
+                          <p className="text-[11px] text-blue-700">Allow brands to hire you for projects</p>
+                        </div>
+                      </div>
+                      <div 
+                        onClick={() => handleInputChange({ target: { name: 'is_available', type: 'checkbox', checked: !formData.is_available } })}
+                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-all duration-300 ${formData.is_available ? 'bg-blue-600' : 'bg-gray-300'}`}
                       >
-                        {plt}
-                      </button>
-                    ))}
+                        <div className={`w-4 h-4 bg-white rounded-full transition-all duration-300 transform ${formData.is_available ? 'translate-x-6' : 'translate-x-0'}`} />
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Tags (Comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue={formData.tags.join(', ')}
-                    onBlur={handleTagsChange}
-                    placeholder="cinematic, storytelling, minimal"
-                    className="w-full border-b py-3 border-[#DDD] focus:border-black focus:outline-none transition-colors bg-transparent text-black"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div>
-                    <p className="text-xs font-bold text-black">Available for Hire</p>
-                    <p className="text-[10px] text-[#999]">Show "Available Now" badge on your profile</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    name="is_available"
-                    checked={formData.is_available}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 accent-black cursor-pointer"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Submit Button */}
-            <div className="flex gap-4 pt-8">
-              <button
-                type="button"
-                onClick={() => navigate(`/dashboard/${user.role}`)}
-                className="flex-1 border border-black text-black py-4 font-bold text-xs uppercase tracking-[0.2em] hover:bg-black/5 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className={`flex-1 bg-black text-white py-4 font-bold text-xs uppercase tracking-[0.2em] hover:bg-black/90 transition-all ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Saving...
-                  </span>
-                ) : (
-                  'Save Changes'
                 )}
+              </div>
+            </div>
+
+
+            {/* SAVE BUTTON */}
+            <div style={{ marginTop: '48px' }}>
+              <button 
+                type="button"
+                onClick={handleSubmit} 
+                disabled={loading}
+                style={{ 
+                  width: '100%',
+                  fontSize: '16px', 
+                  padding: '16px', 
+                  borderRadius: '8px', 
+                  border: 'none', 
+                  background: '#3B82F6', 
+                  color: '#FFFFFF', 
+                  cursor: 'pointer', 
+                  opacity: loading ? 0.7 : 1,
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#2563EB'}
+                onMouseOut={(e) => e.currentTarget.style.background = '#3B82F6'}
+              >
+                {loading ? 'Saving...' : 'Save Settings'}
               </button>
             </div>
-          </form>
-        </motion.div>
+
+          </div>
+        </div>
       </div>
     </>
   );

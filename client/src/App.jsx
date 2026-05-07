@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
@@ -25,8 +25,10 @@ import ExplorePage from './pages/ExplorePage';
 import UploadPage from './pages/UploadPage';
 import CreatorDashboard from './pages/CreatorDashboard';
 import BrandDashboard from './pages/BrandDashboard';
+import MessagingPage from './pages/MessagingPage';
 
 import DirectMessagePage from './pages/DirectMessagePage';
+// MessagingPage removed — use DirectMessagePage at /dm/:id
 import CheckoutPage from './pages/CheckoutPage';
 import ProjectProgressPage from './pages/ProjectProgressPage';
 
@@ -36,6 +38,7 @@ import NotFoundPage from './pages/NotFoundPage';
 // Footer Pages - Product
 import FeaturesPage from './pages/FeaturesPage';
 import PricingPage from './pages/PricingPage';
+import CreatorPricingPage from './pages/CreatorPricingPage';
 import IntegrationsPage from './pages/IntegrationsPage';
 import ChangelogPage from './pages/ChangelogPage';
 
@@ -54,9 +57,20 @@ import ContactPage from './pages/ContactPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 
+import { useAuth } from './context/AuthContext';
+
+/** Redirects /profile/me → /profile/:userId, or /auth if not logged in */
+function ProfileMeRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" /></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  return <Navigate to={`/profile/${user.id}`} replace />;
+}
+
 const AppLayout = () => {
   const location = useLocation();
   const isDriplens = location.pathname.startsWith('/driplens');
+
   const isDM = location.pathname.startsWith('/dm');
 
   return (
@@ -101,12 +115,12 @@ const AppLayout = () => {
           <Route path="/terms" element={<TermsPage />} />
 
           {/* Protected — any logged-in user */}
-          <Route path="/messages" element={
-            <ProtectedRoute><MessagingPage /></ProtectedRoute>
-          } />
           <Route path="/dm/:id" element={<DirectMessagePage />} />
+          <Route path="/profile/:id/pricing" element={<CreatorPricingPage />} />
+          <Route path="/profile/:id/checkout" element={<CheckoutPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/progress" element={<ProjectProgressPage />} />
+          <Route path="/progress/:projectId" element={<ProjectProgressPage />} />
           <Route path="/profile/edit" element={
             <ProtectedRoute><EditProfilePage /></ProtectedRoute>
           } />
@@ -153,6 +167,7 @@ function App() {
                       <Route path="/creators" element={<CreatorsPage />} />
                       <Route path="/brands" element={<BrandsPage />} />
                       <Route path="/explore" element={<ExplorePage />} />
+                      <Route path="/profile/me" element={<ProfileMeRedirect />} />
                       <Route path="/profile/:id" element={<CreatorProfilePage />} />
                       <Route path="/brand/:id" element={<BrandProfilePage />} />
 
@@ -178,9 +193,13 @@ function App() {
                       <Route path="/terms" element={<TermsPage />} />
 
                       {/* Protected — any logged-in user */}
-                      <Route path="/messages" element={
-                        <ProtectedRoute><MessagingPage /></ProtectedRoute>
-                      } />
+
+                      <Route path="/dm/:id" element={<DirectMessagePage />} />
+                      <Route path="/profile/:id/pricing" element={<CreatorPricingPage />} />
+                      <Route path="/profile/:id/checkout" element={<CheckoutPage />} />
+                      <Route path="/checkout" element={<CheckoutPage />} />
+                      <Route path="/progress" element={<ProjectProgressPage />} />
+                      <Route path="/progress/:projectId" element={<ProjectProgressPage />} />
                       <Route path="/profile/edit" element={
                         <ProtectedRoute><EditProfilePage /></ProtectedRoute>
                       } />
@@ -188,6 +207,9 @@ function App() {
                       {/* Protected — role-specific */}
                       <Route path="/upload" element={
                         <ProtectedRoute requiredRole="creator"><UploadPage /></ProtectedRoute>
+                      } />
+                      <Route path="/messages" element={
+                        <ProtectedRoute><MessagingPage /></ProtectedRoute>
                       } />
                       <Route path="/dashboard/creator" element={
                         <ProtectedRoute requiredRole="creator"><CreatorDashboard /></ProtectedRoute>

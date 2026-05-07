@@ -12,8 +12,21 @@ export const ALLOWED_CATEGORIES = [
 
 export const uploadMetaSchema = z.object({
   title:       z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
+  description: z.string().max(500).nullable().optional(),
+  category:    z.enum(ALLOWED_CATEGORIES),
+  project_id:  z.string().uuid().optional()
+});
+
+export const createPortfolioProjectSchema = z.object({
+  title:       z.string().min(1).max(100),
+  description: z.string().max(2000).nullable().optional(),
   category:    z.enum(ALLOWED_CATEGORIES)
+});
+
+export const updatePortfolioProjectSchema = z.object({
+  title:       z.string().min(1).max(100).optional(),
+  description: z.string().max(2000).nullable().optional(),
+  category:    z.enum(ALLOWED_CATEGORIES).optional()
 });
 
 export const ALLOWED_MIME_TYPES = [

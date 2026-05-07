@@ -16,6 +16,20 @@
   /* Shadows for Depth */
   --shadow-premium: 0 10px 30px -10px rgba(5, 64, 242, 0.1);
   --shadow-glow: 0 0 20px rgba(5, 64, 242, 0.15);
+  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+
+  /* Animations */
+  @keyframes shadow-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(5, 64, 242, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(5, 64, 242, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(5, 64, 242, 0); }
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+  }
 }
 
 @layer base {
@@ -89,6 +103,32 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+
+  /* Redesign Utilities */
+  .animated-underline-container {
+    @apply relative inline-block;
+  }
+
+  .animated-underline-container::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-[3px] bg-brand-accent transition-all duration-500 ease-out;
+  }
+
+  .animated-underline-container:hover::after {
+    @apply w-full;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-premium;
+  }
+
+  .pulse-shadow {
+    animation: shadow-pulse 2s infinite;
+  }
+
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
 }
 
 /* Custom Scrollbar */
@@ -107,4 +147,360 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-brand-label);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* ═══════════════════════════════════════════════
+   WORK DETAIL CARD  – redesigned modal component
+═══════════════════════════════════════════════ */
+
+/* ── Card shell ── */
+.wdc-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 980px;
+  max-height: 90vh;
+  background: #ffffff;
+  border-radius: 0;                        /* sharp edges */
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(2, 6, 23, 0.22), 0 2px 8px rgba(2, 6, 23, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
+.wdc-card:hover {
+  box-shadow: 0 20px 60px rgba(2, 6, 23, 0.28), 0 4px 16px rgba(2, 6, 23, 0.12);
+}
+
+@media (min-width: 768px) {
+  .wdc-card {
+    flex-direction: row;
+  }
+}
+
+/* ── Image column ── */
+.wdc-image-col {
+  position: relative;
+  flex: 0 0 55%;
+  min-height: 260px;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Media (image / video) ── */
+.wdc-media {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.55s ease;
+}
+
+.wdc-image-col:hover .wdc-media {
+  transform: scale(1.04);
+  filter: brightness(1.06);
+}
+
+/* ── Category badge (image overlay) ── */
+.wdc-category-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 0;
+}
+
+/* ── Vertical divider ── */
+.wdc-divider {
+  display: none;
+  flex: 0 0 1px;
+  background: #e8e8e8;
+}
+
+@media (min-width: 768px) {
+  .wdc-divider {
+    display: block;
+  }
+}
+
+/* ── Content column ── */
+.wdc-content-col {
+  flex: 1;
+  padding: 36px 36px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow-y: auto;
+  position: relative;
+  background: #ffffff;
+}
+
+/* ── Close button ── */
+.wdc-close-btn {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #e2e2e2;
+  background: #f9f9f9;
+  color: #555;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  flex-shrink: 0;
+}
+
+.wdc-close-btn:hover {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+}
+
+.wdc-close-btn:focus-visible {
+  outline: 2px solid #0046FF;
+  outline-offset: 2px;
+}
+
+/* ── Type label (e.g. "CINEMATOGRAPHY") ── */
+.wdc-type-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #999;
+  margin-top: 4px;
+  margin-bottom: 10px;
+}
+
+/* ── Title ── */
+.wdc-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.4rem, 2.5vw, 1.9rem);
+  font-weight: 700;
+  color: #0d0d0d;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+
+/* ── Description ── */
+.wdc-description {
+  font-family: 'Inter', sans-serif;
+  font-size: 13.5px;
+  color: #4a4a4a;
+  line-height: 1.75;
+  margin-bottom: 22px;
+}
+
+/* ── Horizontal rule ── */
+.wdc-h-rule {
+  width: 100%;
+  height: 1px;
+  background: #ececec;
+  margin: 18px 0;
+  flex-shrink: 0;
+}
+
+/* ── Creator row ── */
+.wdc-creator-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ── Avatar ── */
+.wdc-avatar {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  background: #0d0d0d;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: 0;             /* square avatar */
+  overflow: hidden;
+}
+
+.wdc-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Creator name / sub ── */
+.wdc-creator-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wdc-creator-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.2;
+}
+
+.wdc-creator-sub {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #999;
+}
+
+/* ── Meta grid ── */
+.wdc-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+
+.wdc-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wdc-meta-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #bbb;
+}
+
+.wdc-meta-value {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #222;
+}
+
+/* ── CTA area ── */
+.wdc-cta-area {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* ── HIRE ME button ── */
+.wdc-hire-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+  background: #0046FF;
+  color: #fff;
+  border: none;
+  border-radius: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 14px 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 70, 255, 0.28);
+  transition: background 0.22s ease, box-shadow 0.22s ease, transform 0.15s ease;
+  text-decoration: none;
+}
+
+.wdc-hire-btn:hover {
+  background: #0031B0;
+  box-shadow: 0 6px 20px rgba(0, 49, 176, 0.35);
+  transform: translateY(-1px);
+}
+
+.wdc-hire-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 49, 176, 0.3);
+}
+
+.wdc-hire-btn:focus-visible {
+  outline: 3px solid #0046FF;
+  outline-offset: 3px;
+}
+
+.wdc-hire-arrow {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.wdc-hire-btn:hover .wdc-hire-arrow {
+  transform: translateX(3px);
+}
+
+/* ── Message button ── */
+.wdc-message-btn {
+  border: 1.5px solid #d8d8d8;
+  background: transparent;
+  color: #333;
+  border-radius: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 14px 20px;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.wdc-message-btn:hover {
+  background: #f4f4f4;
+  border-color: #aaa;
+}
+
+.wdc-message-btn:focus-visible {
+  outline: 2px solid #0046FF;
+  outline-offset: 2px;
 }

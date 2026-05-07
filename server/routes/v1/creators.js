@@ -16,6 +16,7 @@ router.get('/', apiLimiter, validate(listCreatorsSchema, 'query'), async (req, r
 
 router.get('/:id', apiLimiter, async (req, res, next) => {
   try {
+    console.log('Searching for creator id:', req.params.id);
     const creator = await creatorService.getCreator(req.params.id);
     res.json({ success: true, data: { creator } });
   } catch (err) { console.error(err); next(err); }

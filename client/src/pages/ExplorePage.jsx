@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { getAllExploreContent } from '../services/externalMediaService';
+import WorkDetailCard from '../components/WorkDetailCard';
 
 export default function ExplorePage() {
   const [content, setContent] = useState([]);
@@ -112,7 +113,7 @@ export default function ExplorePage() {
                   {item.mediaType === 'video' ? (
                     <video 
                       src={item.mediaUrl} 
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                      className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105"
                       muted
                       loop
                       onMouseOver={e => e.target.play()}
@@ -122,9 +123,20 @@ export default function ExplorePage() {
                     <img 
                       src={item.mediaUrl} 
                       alt={item.title} 
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                      className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105"
                     />
                   )}
+                  
+                  {/* Multi-item indicator */}
+                  {item.items?.length > 1 && (
+                    <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1.5 uppercase tracking-widest flex items-center gap-2">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                      </svg>
+                      {item.items.length} Files
+                    </div>
+                  )}
+
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-500"></div>
                   <div className="absolute bottom-0 left-0 right-0 p-8 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                     <span className="bg-white text-black px-6 py-3 text-[10px] font-bold uppercase tracking-widest shadow-xl">
@@ -147,7 +159,7 @@ export default function ExplorePage() {
                       )}
                     </div>
                     <p className="text-xs uppercase tracking-widest font-semibold text-[#999999]">
-                      By {item.author?.username || 'Anonymous'} • {item.category}
+                      By {item.author?.username || item.author?.display_name || 'Anonymous'} • {item.category}
                     </p>
                   </div>
                   <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -178,60 +190,10 @@ export default function ExplorePage() {
           )}
         </>
       )}
-      {selectedProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedProject(null)}>
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-white w-full max-w-6xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden border-4 border-black shadow-[16px_16px_0px_rgba(0,0,0,1)] relative"
-            onClick={e => e.stopPropagation()}
-          >
-            <button 
-              className="absolute top-4 right-4 z-10 bg-white border-2 border-black w-10 h-10 flex items-center justify-center hover:bg-black hover:text-white transition-colors shadow-[4px_4px_0px_rgba(0,0,0,1)]"
-              onClick={() => setSelectedProject(null)}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-            
-            <div className="md:w-2/3 bg-gray-100 flex items-center justify-center border-b-4 md:border-b-0 md:border-r-4 border-black min-h-[300px]">
-              {selectedProject.mediaType === 'video' ? (
-                <video src={selectedProject.mediaUrl} controls autoPlay className="w-full h-full object-contain max-h-[90vh]" />
-              ) : (
-                <img src={selectedProject.mediaUrl} alt={selectedProject.title} className="w-full h-full object-contain max-h-[90vh]" />
-              )}
-            </div>
-            
-            <div className="md:w-1/3 p-8 flex flex-col overflow-y-auto">
-              <h2 className="text-3xl font-bold font-['Space_Grotesk'] mb-2 uppercase">{selectedProject.title}</h2>
-              <p className="text-sm tracking-widest text-gray-500 uppercase font-bold mb-8">{selectedProject.category}</p>
-              
-              <div className="border-t-2 border-b-2 border-black py-6 mb-8">
-                <p className="text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">Creator</p>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white font-bold text-xl uppercase">
-                    {(selectedProject.author?.username || 'A')[0]}
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">{selectedProject.author?.username || 'Anonymous'}</h3>
-                    <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">Independent</p>
-                  </div>
-                </div>
-                <p className="text-sm leading-relaxed text-gray-700">
-                  {selectedProject.author?.bio || "A multi-disciplinary creative professional with a proven track record of delivering high-impact visual experiences. Passionate about pushing boundaries and setting new industry standards."}
-                </p>
-              </div>
-              
-              <div className="mt-auto">
-                <Link to="/profile/demo" className="w-full bg-[var(--color-brand-accent)] text-white border-2 border-black py-4 font-bold uppercase tracking-widest shadow-[8px_8px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[6px_6px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2 group">
-                  <span>Hire Me</span>
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
+      <WorkDetailCard
+        project={selectedProject}
+        onClose={() => setSelectedProject(null)}
+      />
     </div>
   );
 }
