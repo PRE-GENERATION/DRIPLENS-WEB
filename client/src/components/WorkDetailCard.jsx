@@ -63,22 +63,30 @@ export default function WorkDetailCard({ project, onClose }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* ─── Left: Image ─── */}
-            <div className="wdc-image-col">
-              {project.mediaType === 'video' ? (
-                <video
-                  src={project.mediaUrl}
-                  controls
-                  autoPlay
-                  muted
-                  className="wdc-media"
-                />
-              ) : (
-                <img
-                  src={project.mediaUrl}
-                  alt={project.title}
-                  className="wdc-media"
-                />
-              )}
+            <div className="wdc-image-col overflow-y-auto custom-scrollbar">
+              <div className="flex flex-col gap-8 p-4 md:p-8">
+                {project.items?.map((item, idx) => (
+                  <div key={idx} className="relative group/item">
+                    {item.mediaType === 'video' ? (
+                      <video
+                        src={item.mediaUrl}
+                        controls
+                        className="wdc-media shadow-2xl max-h-[70vh] object-contain mx-auto"
+                      />
+                    ) : (
+                      <img
+                        src={item.mediaUrl}
+                        alt={`${project.title} - ${idx + 1}`}
+                        className="wdc-media shadow-2xl max-h-[70vh] object-contain mx-auto"
+                      />
+                    )}
+                    <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-md text-white text-[8px] font-bold px-2 py-1 uppercase tracking-widest opacity-0 group-hover/item:opacity-100 transition-opacity">
+                      {idx + 1} / {project.items.length}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
               {/* Category badge overlay */}
               <span className="wdc-category-badge">
                 {project.category || 'Creative'}

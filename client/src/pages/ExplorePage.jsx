@@ -113,7 +113,7 @@ export default function ExplorePage() {
                   {item.mediaType === 'video' ? (
                     <video 
                       src={item.mediaUrl} 
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                      className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105"
                       muted
                       loop
                       onMouseOver={e => e.target.play()}
@@ -123,9 +123,20 @@ export default function ExplorePage() {
                     <img 
                       src={item.mediaUrl} 
                       alt={item.title} 
-                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                      className="w-full h-full object-contain transition-transform duration-1000 group-hover:scale-105"
                     />
                   )}
+                  
+                  {/* Multi-item indicator */}
+                  {item.items?.length > 1 && (
+                    <div className="absolute top-6 right-6 bg-black/60 backdrop-blur-md text-white text-[9px] font-bold px-3 py-1.5 uppercase tracking-widest flex items-center gap-2">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                      </svg>
+                      {item.items.length} Files
+                    </div>
+                  )}
+
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-500"></div>
                   <div className="absolute bottom-0 left-0 right-0 p-8 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                     <span className="bg-white text-black px-6 py-3 text-[10px] font-bold uppercase tracking-widest shadow-xl">
@@ -148,7 +159,7 @@ export default function ExplorePage() {
                       )}
                     </div>
                     <p className="text-xs uppercase tracking-widest font-semibold text-[#999999]">
-                      By {item.author?.username || 'Anonymous'} • {item.category}
+                      By {item.author?.username || item.author?.display_name || 'Anonymous'} • {item.category}
                     </p>
                   </div>
                   <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">

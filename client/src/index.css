@@ -16,6 +16,20 @@
   /* Shadows for Depth */
   --shadow-premium: 0 10px 30px -10px rgba(5, 64, 242, 0.1);
   --shadow-glow: 0 0 20px rgba(5, 64, 242, 0.15);
+  --shadow-soft: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+
+  /* Animations */
+  @keyframes shadow-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(5, 64, 242, 0.4); }
+    70% { box-shadow: 0 0 0 15px rgba(5, 64, 242, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(5, 64, 242, 0); }
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0px); }
+  }
 }
 
 @layer base {
@@ -89,6 +103,32 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
+
+  /* Redesign Utilities */
+  .animated-underline-container {
+    @apply relative inline-block;
+  }
+
+  .animated-underline-container::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-0 h-[3px] bg-brand-accent transition-all duration-500 ease-out;
+  }
+
+  .animated-underline-container:hover::after {
+    @apply w-full;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-white/20 shadow-premium;
+  }
+
+  .pulse-shadow {
+    animation: shadow-pulse 2s infinite;
+  }
+
+  .float-animation {
+    animation: float 3s ease-in-out infinite;
+  }
 }
 
 /* Custom Scrollbar */
@@ -107,6 +147,28 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-brand-label);
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* ═══════════════════════════════════════════════
@@ -143,14 +205,15 @@
   flex: 0 0 55%;
   min-height: 260px;
   background: #111;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── Media (image / video) ── */
 .wdc-media {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
   transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
               filter 0.55s ease;

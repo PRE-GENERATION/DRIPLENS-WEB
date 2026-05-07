@@ -2,6 +2,19 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
+import { 
+  Instagram, 
+  Twitter, 
+  Linkedin, 
+  Globe, 
+  Plus, 
+  Info,
+  DollarSign,
+  Users,
+  Target,
+  Hash,
+  Briefcase
+} from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,6 +57,7 @@ export default function EditProfilePage() {
     banner_url: '',
     instagram: '',
     twitter: '',
+    linkedin: '',
     website: '',
     min_budget: 0,
     max_budget: 10000,
@@ -78,6 +92,7 @@ export default function EditProfilePage() {
           banner_url: creator.banner_url || '',
           instagram: creator.instagram || '',
           twitter: creator.twitter || '',
+          linkedin: creator.linkedin || '',
           website: creator.website || '',
           min_budget: creator.min_budget || 0,
           max_budget: creator.max_budget || 10000,
@@ -272,6 +287,7 @@ export default function EditProfilePage() {
         location:      formData.location,
         instagram:     formData.instagram,
         twitter:       formData.twitter,
+        linkedin:      formData.linkedin,
         website:       formData.website,
         avatar_url:    avatarUrl,
         banner_url:    bannerUrl,
@@ -289,7 +305,7 @@ export default function EditProfilePage() {
       await api.patch('/creators/profile', payload);
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setTimeout(() => {
-        navigate(`/dashboard/${user.role}`);
+        navigate('/profile/me');
       }, 1500);
     } catch (err) {
       setMessage({ type: 'error', text: err.message || 'Failed to update profile' });
@@ -298,35 +314,48 @@ export default function EditProfilePage() {
     }
   };
 
-  const handleCancel = () => navigate(`/dashboard/${user?.role}`);
+  const handleCancel = () => navigate('/profile/me');
+
+  const cardStyle = {
+    background: '#FFFFFF',
+    border: '1px solid #E5E7EB',
+    borderRadius: '8px',
+    padding: '32px',
+    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.05), 0px 0px 0px 1px rgba(0, 0, 0, 0.05)',
+    marginBottom: '32px'
+  };
 
   const inputStyle = { 
     width: '100%', 
-    border: '0.5px solid #E8E8F0', 
-    borderRadius: '8px', 
-    padding: '8px 11px', 
-    fontSize: '12px', 
-    color: '#0D1033', 
-    background: '#FAFAFA', 
+    border: '1px solid #D1D5DB', 
+    borderRadius: '6px', 
+    padding: '12px 16px', 
+    fontSize: '14px', 
+    color: '#111111', 
+    background: '#FFFFFF', 
     outline: 'none',
-    transition: 'border-color 0.2s'
+    transition: 'all 0.3s ease',
+    fontFamily: "'Inter', sans-serif"
   };
 
   const labelStyle = { 
-    fontSize: '10px', 
-    color: '#9CA3AF', 
-    letterSpacing: '.05em', 
-    textTransform: 'uppercase', 
-    marginBottom: '5px' 
+    fontSize: '14px', 
+    color: '#555555', 
+    fontWeight: '500',
+    marginBottom: '8px',
+    display: 'block',
+    fontFamily: "'Inter', sans-serif"
   };
+
+  const focusStyle = "focus:border-[#3B82F6] focus:ring-2 focus:ring-[#3B82F6] focus:ring-opacity-20";
 
   if (initialLoading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#F8F9FC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <div style={{ minHeight: '100vh', background: '#F8F9FC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Inter', sans-serif" }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ width: '24px', height: '24px', border: '2px solid #3B50E0', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <p style={{ fontSize: '11px', color: '#9CA3AF' }}>Loading profile...</p>
+          <p style={{ fontSize: '11px', color: '#9CA3AF', fontFamily: "'Inter', sans-serif" }}>Loading profile...</p>
         </div>
       </div>
     );
@@ -339,49 +368,12 @@ export default function EditProfilePage() {
         <meta name="description" content="Edit your Driplens profile" />
       </Helmet>
 
-      <div style={{ minHeight: '100vh', background: '#F8F9FC', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, system-ui, sans-serif' }}>
-        {/* TOP HEADER BAR */}
-        <div style={{ background: '#fff', borderBottom: '0.5px solid #F0F0F0', padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
-          <div>
-            <div style={{ fontSize: '14px', color: '#0D1033', fontWeight: '500' }}>Profile settings</div>
-            <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '2px' }}>Manage your public profile and personal information</div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button 
-              type="button"
-              onClick={handleCancel} 
-              style={{ fontSize: '11px', padding: '7px 16px', borderRadius: '8px', border: '0.5px solid #E0E0E8', background: '#fff', color: '#6B7280', cursor: 'pointer' }}
-            >
-              Cancel
-            </button>
-            <button 
-              type="button"
-              onClick={handleSubmit} 
-              disabled={loading}
-              style={{ fontSize: '11px', padding: '7px 18px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #3B50E0, #C060C0)', color: '#fff', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
-            >
-              {loading ? 'Saving...' : 'Save changes'}
-            </button>
-          </div>
-        </div>
+      <div style={{ minHeight: '100vh', background: '#F9FAFB', display: 'flex', flexDirection: 'column', fontFamily: "'Inter', sans-serif" }}>
 
         {/* BODY */}
-        <div style={{ display: 'flex', flex: 1, maxWidth: '900px', margin: '0 auto', width: '100%', padding: '24px 24px' }}>
+        <div style={{ display: 'flex', flex: 1, maxWidth: '1000px', margin: '0 auto', width: '100%', padding: '48px 24px' }}>
 
-          {/* LEFT SIDEBAR NAV */}
-          <div style={{ width: '160px', flexShrink: 0, marginRight: '24px' }}>
-            {[['Profile', true], ['Portfolio', false], ['Availability', false], ['Notifications', false], ['Security', false]].map(([label, active]) => (
-              <div 
-                key={label} 
-                style={{ fontSize: '12px', color: active ? '#0D1033' : '#6B7280', padding: '8px 12px', borderRadius: '8px', background: active ? '#F5F5FF' : 'transparent', fontWeight: active ? '500' : '400', cursor: 'pointer', marginBottom: '2px' }}
-              >
-                {label}
-              </div>
-            ))}
-          </div>
-
-          {/* MAIN CONTENT — CARDS */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ flex: 1 }}>
             
             <AnimatePresence>
               {message.text && (
@@ -391,12 +383,16 @@ export default function EditProfilePage() {
                   exit={{ opacity: 0, y: -10 }}
                   style={{ 
                     padding: '12px 16px', 
-                    borderRadius: '12px', 
-                    fontSize: '11px',
-                    marginBottom: '4px',
+                    borderRadius: '8px', 
+                    fontSize: '14px',
+                    marginBottom: '24px',
                     background: message.type === 'error' ? '#FEF2F2' : '#F0FDF4',
                     color: message.type === 'error' ? '#991B1B' : '#166534',
-                    border: `0.5px solid ${message.type === 'error' ? '#FEE2E2' : '#DCFCE7'}`
+                    border: `1px solid ${message.type === 'error' ? '#FEE2E2' : '#DCFCE7'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '500'
                   }}
                 >
                   {message.text}
@@ -404,259 +400,338 @@ export default function EditProfilePage() {
               )}
             </AnimatePresence>
 
-            {/* CARD 1 — Profile photo */}
-            <div style={{ background: '#fff', border: '0.5px solid #F0F0F0', borderRadius: '14px', padding: '20px 22px' }}>
-              <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Profile photo</div>
-              <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '14px' }}>This will be displayed on your public profile</div>
-              
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
-                <div 
-                  onClick={() => avatarInputRef.current?.click()}
-                  style={{ 
-                    width: '52px', 
-                    height: '52px', 
-                    borderRadius: '50%', 
-                    background: avatarPreview ? `url(${avatarPreview}) center/cover no-repeat` : 'linear-gradient(135deg, #3B50E0, #C060C0)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontSize: '18px', 
-                    color: '#fff', 
-                    flexShrink: 0, 
-                    cursor: 'pointer',
-                    overflow: 'hidden'
-                  }}
-                >
-                  {!avatarPreview && user?.username?.[0]?.toUpperCase()}
-                </div>
-                <div>
-                  <input type="file" ref={avatarInputRef} onChange={handleAvatarChange} className="hidden" accept="image/*" />
-                  <button 
-                    type="button"
-                    onClick={() => avatarInputRef.current?.click()}
-                    style={{ fontSize: '10px', padding: '6px 14px', border: '0.5px solid #E0E0E8', borderRadius: '7px', background: '#fff', color: '#0D1033', cursor: 'pointer', marginRight: '8px' }}
-                  >
-                    Upload new photo
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => { setAvatarFile(null); setAvatarPreview(null); }}
-                    style={{ fontSize: '10px', padding: '6px 14px', border: '0.5px solid #F09595', borderRadius: '7px', background: '#fff', color: '#E24B4A', cursor: 'pointer' }}
-                  >
-                    Remove
-                  </button>
-                  <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '6px' }}>JPG, PNG or WebP — max 5MB</div>
-                </div>
-              </div>
-
-              {/* Banner / Cover Photo - Keeping existing logic */}
-              <div style={{ borderTop: '0.5px solid #F0F0F0', paddingTop: '20px' }}>
-                <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Cover photo</div>
-                <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '14px' }}>Recommended: 1200×400px</div>
-                <div 
-                  onClick={() => bannerInputRef.current?.click()}
-                  style={{ 
-                    width: '100%', 
-                    height: '100px', 
-                    borderRadius: '10px', 
-                    border: '1px dashed #E0E0E8', 
-                    background: bannerPreview ? `url(${bannerPreview}) center/cover no-repeat` : '#FAFAFA',
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    overflow: 'hidden'
-                  }}
-                >
-                  <input type="file" ref={bannerInputRef} onChange={handleBannerChange} className="hidden" accept="image/*" />
-                  {!bannerPreview && <span style={{ fontSize: '10px', color: '#9CA3AF' }}>Click to upload cover photo</span>}
-                </div>
-                {errors.banner && <p style={{ color: '#E24B4A', fontSize: '10px', marginTop: '4px' }}>{errors.banner}</p>}
-              </div>
-            </div>
-
-            {/* CARD 2 — Personal details */}
-            <div style={{ background: '#fff', border: '0.5px solid #F0F0F0', borderRadius: '14px', padding: '20px 22px' }}>
-              <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Personal details</div>
-              <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '16px' }}>Update your {isCreator ? 'specialty' : 'industry'}, bio and location</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            {/* COMBINED SECTION — SOCIAL & DISCOVERY */}
+            <div style={cardStyle}>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
                 
-                {/* Category/Specialty */}
-                <div>
-                  <div style={labelStyle}>{isCreator ? 'Specialty' : 'Industry'}</div>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleInputChange}
-                    style={inputStyle}
-                  >
-                    <option value="">Select a category...</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Location */}
-                <div>
-                  <div style={labelStyle}>Location</div>
-                  <input
-                    type="text"
-                    name="location"
-                    value={formData.location}
-                    onChange={handleInputChange}
-                    placeholder="City, Country"
-                    style={inputStyle}
-                  />
-                  {errors.location && <p style={{ color: '#E24B4A', fontSize: '10px', marginTop: '4px' }}>{errors.location}</p>}
-                </div>
-
-                {/* Bio */}
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={labelStyle}>Bio {formData.bio.length > 0 && `(${formData.bio.length}/500)`}</div>
-                  <textarea
-                    name="bio"
-                    value={formData.bio}
-                    onChange={handleInputChange}
-                    placeholder="Tell your story..."
-                    rows="3"
-                    maxLength="500"
-                    style={{ ...inputStyle, resize: 'none' }}
-                  />
-                  {errors.bio && <p style={{ color: '#E24B4A', fontSize: '10px', marginTop: '4px' }}>{errors.bio}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 3 — Social links */}
-            <div style={{ background: '#fff', border: '0.5px solid #F0F0F0', borderRadius: '14px', padding: '20px 22px' }}>
-              <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Social links</div>
-              <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '16px' }}>Add your social media profiles</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <div style={labelStyle}>Instagram</div>
-                  <input
-                    type="text"
-                    name="instagram"
-                    value={formData.instagram}
-                    onChange={handleInputChange}
-                    placeholder="handle"
-                    style={inputStyle}
-                  />
-                </div>
-                <div>
-                  <div style={labelStyle}>Twitter / X</div>
-                  <input
-                    type="text"
-                    name="twitter"
-                    value={formData.twitter}
-                    onChange={handleInputChange}
-                    placeholder="handle"
-                    style={inputStyle}
-                  />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <div style={labelStyle}>Website</div>
-                  <input
-                    type="url"
-                    name="website"
-                    value={formData.website}
-                    onChange={handleInputChange}
-                    placeholder="https://..."
-                    style={inputStyle}
-                  />
-                  {errors.website && <p style={{ color: '#E24B4A', fontSize: '10px', marginTop: '4px' }}>{errors.website}</p>}
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 4 — Creator Discovery Settings */}
-            {isCreator && (
-              <div style={{ background: '#fff', border: '0.5px solid #F0F0F0', borderRadius: '14px', padding: '20px 22px' }}>
-                <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Discovery settings</div>
-                <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '16px' }}>Manage how brands find and hire you</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <div style={labelStyle}>Min Budget ($)</div>
-                    <input
-                      type="number"
-                      name="min_budget"
-                      value={formData.min_budget}
-                      onChange={handleInputChange}
-                      style={inputStyle}
-                    />
+                {/* Left Column: Social Profiles */}
+                <div className="lg:col-span-5 border-b lg:border-b-0 lg:border-r border-[#F0F0F0] pb-10 lg:pb-0 lg:pr-10">
+                  <div style={{ marginBottom: '32px' }}>
+                    <div style={{ fontSize: '20px', color: '#111111', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Globe className="w-5 h-5 text-brand-accent" /> Social Profiles
+                    </div>
+                    <p style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.5' }}>
+                      Connect your social profiles to boost visibility and help brands find your work easily.
+                    </p>
                   </div>
-                  <div>
-                    <div style={labelStyle}>Max Budget ($)</div>
-                    <input
-                      type="number"
-                      name="max_budget"
-                      value={formData.max_budget}
-                      onChange={handleInputChange}
-                      style={inputStyle}
-                    />
+
+                  <div className="space-y-6">
+                    {/* Instagram */}
+                    <div className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-pink-50 rounded-lg group-focus-within:bg-pink-500 group-focus-within:text-white transition-all">
+                            <Instagram className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#374151]">Instagram</span>
+                        </div>
+                        {!formData.instagram && (
+                          <span className="text-[10px] font-bold text-pink-500 uppercase tracking-wider">Required</span>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="instagram"
+                          value={formData.instagram}
+                          onChange={handleInputChange}
+                          placeholder="your_username"
+                          className={focusStyle}
+                          style={{ ...inputStyle, paddingLeft: '40px' }}
+                        />
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
+                      </div>
+                    </div>
+
+                    {/* Twitter/X */}
+                    <div className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-zinc-100 rounded-lg group-focus-within:bg-black group-focus-within:text-white transition-all">
+                            <Twitter className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#374151]">Twitter / X</span>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="twitter"
+                          value={formData.twitter}
+                          onChange={handleInputChange}
+                          placeholder="your_handle"
+                          className={focusStyle}
+                          style={{ ...inputStyle, paddingLeft: '40px' }}
+                        />
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
+                      </div>
+                    </div>
+
+                    {/* LinkedIn */}
+                    <div className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-50 rounded-lg group-focus-within:bg-blue-600 group-focus-within:text-white transition-all">
+                            <Linkedin className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#374151]">LinkedIn</span>
+                        </div>
+                      </div>
+                      <input
+                        type="text"
+                        name="linkedin"
+                        value={formData.linkedin}
+                        onChange={handleInputChange}
+                        placeholder="linkedin.com/in/yourprofile"
+                        className={focusStyle}
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    {/* Website */}
+                    <div className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-50 rounded-lg group-focus-within:bg-indigo-600 group-focus-within:text-white transition-all">
+                            <Globe className="w-4 h-4" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#374151]">Portfolio Website</span>
+                        </div>
+                      </div>
+                      <input
+                        type="url"
+                        name="website"
+                        value={formData.website}
+                        onChange={handleInputChange}
+                        placeholder="https://yourwork.com"
+                        className={focusStyle}
+                        style={inputStyle}
+                      />
+                      {errors.website && <p style={{ color: '#EF4444', fontSize: '11px', marginTop: '6px' }}>{errors.website}</p>}
+                    </div>
+
+                    <div className="pt-4 mt-8 bg-zinc-50 p-4 rounded-xl border border-dashed border-zinc-200">
+                      <div className="flex gap-3">
+                        <Info className="w-4 h-4 text-brand-accent mt-0.5" />
+                        <p className="text-[12px] text-[#4B5563] leading-relaxed">
+                          <span className="font-bold text-brand-accent">Pro Tip:</span> Linked profiles are shown on your public portfolio to build trust with potential clients.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={labelStyle}>Follower Count</div>
-                    <input
-                      type="number"
-                      name="follower_count"
-                      value={formData.follower_count}
-                      onChange={handleInputChange}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={labelStyle}>Platforms</div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
-                      {['Instagram', 'TikTok', 'YouTube', 'Twitter', 'Twitch', 'LinkedIn'].map(plt => (
-                        <button
-                          key={plt}
-                          type="button"
-                          onClick={() => handlePlatformToggle(plt)}
-                          style={{
-                            padding: '5px 12px',
-                            borderRadius: '100px',
-                            fontSize: '10px',
-                            border: '0.5px solid #E0E0E8',
-                            background: formData.platforms.includes(plt) ? '#3B50E0' : '#fff',
-                            color: formData.platforms.includes(plt) ? '#fff' : '#6B7280',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s'
+                </div>
+
+                {/* Right Column: Discovery Details */}
+                {isCreator && (
+                  <div className="lg:col-span-7">
+                    <div style={{ marginBottom: '32px' }}>
+                      <div style={{ fontSize: '20px', color: '#111111', fontWeight: '700', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Target className="w-5 h-5 text-brand-accent" /> Discovery Details
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#6B7280', lineHeight: '1.5' }}>
+                        Set your preferences to help brands find and hire you based on their specific needs.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 mb-8">
+                      <div>
+                        <label style={labelStyle}>
+                          <span className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5" /> Min Budget ($)</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="min_budget"
+                          value={formData.min_budget}
+                          onChange={handleInputChange}
+                          placeholder="500"
+                          className={focusStyle}
+                          style={inputStyle}
+                        />
+                      </div>
+                      <div>
+                        <label style={labelStyle}>
+                          <span className="flex items-center gap-2"><DollarSign className="w-3.5 h-3.5" /> Max Budget ($)</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="max_budget"
+                          value={formData.max_budget}
+                          onChange={handleInputChange}
+                          placeholder="5000"
+                          className={focusStyle}
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mb-8">
+                      <label style={labelStyle}>
+                        <span className="flex items-center gap-2"><Users className="w-3.5 h-3.5" /> Total Follower Count</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="follower_count"
+                        value={formData.follower_count}
+                        onChange={handleInputChange}
+                        placeholder="10000"
+                        className={focusStyle}
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    <div className="mb-8">
+                      <label style={labelStyle}>
+                        <span className="flex items-center gap-2"><Globe className="w-3.5 h-3.5" /> Active Platforms</span>
+                      </label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                        {['Instagram', 'TikTok', 'YouTube', 'Twitter', 'Twitch', 'LinkedIn'].map(plt => {
+                          const isSelected = formData.platforms.includes(plt);
+                          return (
+                            <button
+                              key={plt}
+                              type="button"
+                              onClick={() => handlePlatformToggle(plt)}
+                              className="transition-all duration-200 active:scale-95"
+                              style={{
+                                padding: '8px 16px',
+                                borderRadius: '12px',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                border: isSelected ? 'none' : '1px solid #E5E7EB',
+                                background: isSelected ? '#3B82F6' : '#FFFFFF',
+                                color: isSelected ? '#FFFFFF' : '#4B5563',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.25)' : 'none'
+                              }}
+                            >
+                              {plt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="mb-8">
+                      <label style={labelStyle}>
+                        <span className="flex items-center gap-2"><Hash className="w-3.5 h-3.5" /> Expertise Tags</span>
+                      </label>
+                      <div style={{ 
+                        ...inputStyle, 
+                        display: 'flex', 
+                        flexWrap: 'wrap', 
+                        gap: '6px', 
+                        padding: '8px',
+                        minHeight: '48px',
+                        alignItems: 'center',
+                        cursor: 'text',
+                        borderRadius: '12px'
+                      }} onClick={() => document.getElementById('tags-input').focus()}>
+                        {formData.tags.map(tag => (
+                          <span
+                            key={tag}
+                            style={{
+                              background: '#3B82F6',
+                              color: '#FFFFFF',
+                              padding: '4px 10px',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFormData(p => ({ ...p, tags: p.tags.filter(t => t !== tag) }));
+                              }}
+                              style={{ border: 'none', background: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '0', fontSize: '14px', opacity: 0.8 }}
+                            >
+                              &times;
+                            </button>
+                          </span>
+                        ))}
+                        <input
+                          id="tags-input"
+                          type="text"
+                          placeholder={formData.tags.length === 0 ? "add tags..." : ""}
+                          style={{ 
+                            border: 'none', 
+                            outline: 'none', 
+                            fontSize: '13px', 
+                            flex: 1, 
+                            minWidth: '100px',
+                            background: 'transparent'
                           }}
-                        >
-                          {plt}
-                        </button>
-                      ))}
+                          onKeyDown={(e) => {
+                            if (e.key === ',' || e.key === 'Enter') {
+                              e.preventDefault();
+                              const val = e.target.value.trim().replace(/,$/, '');
+                              if (val && !formData.tags.includes(val)) {
+                                setFormData(p => ({ ...p, tags: [...p.tags, val] }));
+                                e.target.value = '';
+                              }
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-lg text-white">
+                          <Briefcase className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-blue-900 leading-none mb-1">Availability</p>
+                          <p className="text-[11px] text-blue-700">Allow brands to hire you for projects</p>
+                        </div>
+                      </div>
+                      <div 
+                        onClick={() => handleInputChange({ target: { name: 'is_available', type: 'checkbox', checked: !formData.is_available } })}
+                        className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-all duration-300 ${formData.is_available ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      >
+                        <div className={`w-4 h-4 bg-white rounded-full transition-all duration-300 transform ${formData.is_available ? 'translate-x-6' : 'translate-x-0'}`} />
+                      </div>
                     </div>
                   </div>
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <div style={labelStyle}>Tags (Comma separated)</div>
-                    <input
-                      type="text"
-                      defaultValue={formData.tags.join(', ')}
-                      onBlur={handleTagsChange}
-                      placeholder="cinematic, storytelling..."
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9FAFB', borderRadius: '10px', marginTop: '8px' }}>
-                    <div>
-                      <div style={{ fontSize: '11px', color: '#0D1033', fontWeight: '500' }}>Available for hire</div>
-                      <div style={{ fontSize: '9px', color: '#9CA3AF' }}>Show availability badge on profile</div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      name="is_available"
-                      checked={formData.is_available}
-                      onChange={handleInputChange}
-                      style={{ width: '16px', height: '16px', accentColor: '#3B50E0', cursor: 'pointer' }}
-                    />
-                  </div>
-                </div>
+                )}
               </div>
-            )}
+            </div>
+
+
+            {/* SAVE BUTTON */}
+            <div style={{ marginTop: '48px' }}>
+              <button 
+                type="button"
+                onClick={handleSubmit} 
+                disabled={loading}
+                style={{ 
+                  width: '100%',
+                  fontSize: '16px', 
+                  padding: '16px', 
+                  borderRadius: '8px', 
+                  border: 'none', 
+                  background: '#3B82F6', 
+                  color: '#FFFFFF', 
+                  cursor: 'pointer', 
+                  opacity: loading ? 0.7 : 1,
+                  fontWeight: '600',
+                  transition: 'all 0.3s ease',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                }}
+                onMouseOver={(e) => e.currentTarget.style.background = '#2563EB'}
+                onMouseOut={(e) => e.currentTarget.style.background = '#3B82F6'}
+              >
+                {loading ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
 
           </div>
         </div>

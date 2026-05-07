@@ -121,26 +121,39 @@ export const getAllExploreContent = async (query = 'creative', page = 1) => {
     let localData = [];
     if (localRes.ok) {
       const response = await localRes.json();
-      // Backend returns { success: true, data: { items, pagination } }
-      const items = response.data?.items || [];
-      localData = items.map(item => ({
-        ...item,
-        mediaUrl: item.media_url || item.mediaUrl,
-        mediaType: item.media_type || item.mediaType,
-        source: 'Local'
+      const projects = response.data?.items || [];
+      localData = projects.map(project => ({
+        ...project,
+        source: 'Local',
+        items: (project.items || []).map(i => ({
+          ...i,
+          mediaUrl: i.media_url || i.mediaUrl,
+          mediaType: i.media_type || i.mediaType
+        })),
+        // Preview fields for the card
+        mediaUrl: project.items?.[0]?.media_url || project.items?.[0]?.mediaUrl,
+        mediaType: project.items?.[0]?.media_type || project.items?.[0]?.mediaType
       }));
-    } else {
-      console.error('Local fetch failed:', localRes.status, localRes.statusText);
     }
 
-    // Fetch external content (fetch fewer per page to avoid massive results)
+    // Fetch external content
     const [pexelsData, pixabayData] = await Promise.all([
       fetchPexelsContent(query, page, 6),
       fetchPixabayContent(query, page, 6)
     ]);
 
+    // Normalize external content to "project" structure
+    const normalizedExternal = [...pexelsData, ...pixabayData].map(item => ({
+      ...item,
+      items: [{
+        mediaUrl: item.mediaUrl,
+        mediaType: item.mediaType,
+        title: item.title
+      }]
+    }));
+
     // Combine
-    const combined = [...localData, ...pexelsData, ...pixabayData];
+    const combined = [...localData, ...normalizedExternal];
     
     // Sort by source priority: Local (highest), then External
     return combined.sort((a, b) => {

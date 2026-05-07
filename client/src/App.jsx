@@ -38,6 +38,7 @@ import NotFoundPage from './pages/NotFoundPage';
 // Footer Pages - Product
 import FeaturesPage from './pages/FeaturesPage';
 import PricingPage from './pages/PricingPage';
+import CreatorPricingPage from './pages/CreatorPricingPage';
 import IntegrationsPage from './pages/IntegrationsPage';
 import ChangelogPage from './pages/ChangelogPage';
 
@@ -115,8 +116,11 @@ const AppLayout = () => {
 
           {/* Protected — any logged-in user */}
           <Route path="/dm/:id" element={<DirectMessagePage />} />
+          <Route path="/profile/:id/pricing" element={<CreatorPricingPage />} />
+          <Route path="/profile/:id/checkout" element={<CheckoutPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/progress" element={<ProjectProgressPage />} />
+          <Route path="/progress/:projectId" element={<ProjectProgressPage />} />
           <Route path="/profile/edit" element={
             <ProtectedRoute><EditProfilePage /></ProtectedRoute>
           } />
@@ -191,6 +195,11 @@ function App() {
                       {/* Protected — any logged-in user */}
 
                       <Route path="/dm/:id" element={<DirectMessagePage />} />
+                      <Route path="/profile/:id/pricing" element={<CreatorPricingPage />} />
+                      <Route path="/profile/:id/checkout" element={<CheckoutPage />} />
+                      <Route path="/checkout" element={<CheckoutPage />} />
+                      <Route path="/progress" element={<ProjectProgressPage />} />
+                      <Route path="/progress/:projectId" element={<ProjectProgressPage />} />
                       <Route path="/profile/edit" element={
                         <ProtectedRoute><EditProfilePage /></ProtectedRoute>
                       } />

@@ -93,7 +93,10 @@ export const getCreator = async (id) => {
       min_budget, max_budget, follower_count, platforms,
       is_available, rating, tags,
       instagram, twitter, website, created_at,
-      portfolio_items (id, title, media_url, media_type, created_at)
+      portfolio_projects (
+        id, title, description, category, created_at,
+        items:portfolio_items(id, title, media_url, media_type, created_at)
+      )
     `)
     .eq('id', id)
     .single();

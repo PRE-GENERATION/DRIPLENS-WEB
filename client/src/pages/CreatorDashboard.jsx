@@ -16,6 +16,8 @@ import {
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import EditProjectModal from '../components/EditProjectModal';
+import WorkDetailCard from '../components/WorkDetailCard';
 
 // ─── MetricBlock ─────────────────────────────────────────────────────────────
 function MetricBlock({ label, value, loading, icon: Icon, trend }) {
@@ -49,19 +51,24 @@ export default function CreatorDashboard() {
   const navigate = useNavigate();
   const [requests, setRequests]   = useState([]);
   const [portfolio, setPortfolio] = useState([]);
+  const [projects, setProjects]   = useState([]);
   const [loading, setLoading]     = useState(true);
+  const [editingProject, setEditingProject] = useState(null);
+  const [selectedDetailProject, setSelectedDetailProject] = useState(null);
 
   useEffect(() => {
     if (!user?.id) return;
     
     const load = async () => {
       try {
-        const [hiringData, uploadData] = await Promise.all([
+        const [hiringData, uploadData, projectsData] = await Promise.all([
           api.get('/hiring'),
-          api.get(`/upload?limit=10&creator_id=${user.id}`)
+          api.get(`/upload?limit=10&creator_id=${user.id}`),
+          api.get('/upload/projects')
         ]);
         setRequests(hiringData.data.requests || []);
         setPortfolio(uploadData.data.items || []);
+        setProjects(projectsData.data || []);
       } catch (err) {
         console.error(err);
       } finally {
@@ -144,7 +151,7 @@ export default function CreatorDashboard() {
                 color: active ? '#3B50E0' : '#9CA3AF', 
                 letterSpacing: '.08em', 
                 padding: '7px 10px', 
-                borderRadius: '6px', 
+                borderRadius: '0px', 
                 background: active ? '#F5F5FF' : 'transparent', 
                 cursor: 'pointer',
                 display: 'block',
@@ -184,15 +191,104 @@ export default function CreatorDashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
           {[
             { label: 'PORTFOLIO', value: portfolio.length, color: '#3B50E0', sub: '+0 this month', borderLeft: '3px solid #3B50E0' },
+            { label: 'PROJECTS', value: projects.length, color: '#0D1033', sub: 'portfolio projects', borderLeft: '3px solid #0D1033' },
             { label: 'INQUIRIES', value: pendingRequests.length, color: '#C060C0', sub: '+0 new', borderLeft: '3px solid #C060C0' },
-            { label: 'PROJECTS', value: accepted.length, color: '#16A34A', sub: 'active', borderLeft: '3px solid #16A34A' },
+            { label: 'ACTIVE JOBS', value: accepted.length, color: '#16A34A', sub: 'hired', borderLeft: '3px solid #16A34A' },
           ].map(card => (
-            <div key={card.label} style={{ background: '#fff', border: 'none', borderLeft: card.borderLeft, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderRadius: '12px', padding: '16px' }}>
+            <div key={card.label} style={{ background: '#fff', border: 'none', borderLeft: card.borderLeft, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderRadius: '0px', padding: '16px' }}>
               <div style={{ fontSize: '10px', color: '#9CA3AF', letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: '8px' }}>{card.label}</div>
               <div style={{ fontSize: '24px', color: card.color }}>{card.value}</div>
               <div style={{ fontSize: '9px', color: '#9CA3AF', marginTop: '6px' }}>{card.sub}</div>
             </div>
           ))}
+        </div>
+
+        {/* Projects Section */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <div style={{ fontSize: '10px', letterSpacing: '.16em', textTransform: 'uppercase', color: '#0D1033' }}>PORTFOLIO PROJECTS</div>
+            <Link to="/upload" style={{ fontSize: '9px', color: '#3B50E0', textDecoration: 'none' }}>+ Create project</Link>
+          </div>
+          
+          {loading ? (
+            <div className="h-20 bg-gray-50 animate-pulse" />
+          ) : projects.length === 0 ? (
+            <div style={{ border: '1px dashed #E0E0EC', background: '#fff', borderRadius: '10px', padding: '32px', textAlign: 'center', fontSize: '11px', color: '#C4C4D0' }}>
+              Organize your work into projects to stand out
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {projects.map(project => {
+                const firstMedia = project.items?.[0];
+                return (
+                  <div 
+                    key={project.id}
+                    onClick={() => setSelectedDetailProject({
+                      ...project,
+                      items: (project.items || []).map(i => ({
+                        ...i,
+                        mediaUrl: i.media_url || i.mediaUrl,
+                        mediaType: i.media_type || i.mediaType
+                      })),
+                      author: user
+                    })}
+                    className="flex-shrink-0 w-64 bg-white border border-[#F0F0F0] p-0 hover:shadow-lg transition-all group relative cursor-pointer"
+                  >
+                    <div className="aspect-video relative overflow-hidden bg-[#FAFAFA]">
+                      {firstMedia ? (
+                        firstMedia.media_type === 'video' ? (
+                          <video 
+                            src={firstMedia.media_url} 
+                            className="w-full h-full object-cover"
+                            muted
+                            onMouseOver={e => e.target.play()}
+                            onMouseOut={e => e.target.pause()}
+                          />
+                        ) : (
+                          <img src={firstMedia.media_url} alt={project.title} className="w-full h-full object-cover" />
+                        )
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-[#F0F0F0]" />
+                        </div>
+                      )}
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setEditingProject(project); }}
+                        className="absolute top-3 right-3 p-2 bg-white/90 border border-[#F0F0F0] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white backdrop-blur-sm shadow-sm"
+                        style={{ borderRadius: '0px' }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="p-5">
+                      <h3 className="font-black text-xs uppercase tracking-tighter mb-1 truncate">{project.title}</h3>
+                      <p className="text-[9px] text-[#9CA3AF] uppercase tracking-widest font-bold mb-4">{project.category}</p>
+                      <div className="flex justify-between items-center text-[9px] font-black text-[#0D1033] uppercase mt-auto">
+                        <span>VIEW DETAILS</span>
+                        <ArrowUpRight className="w-3 h-3" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <EditProjectModal 
+            project={editingProject}
+            isOpen={!!editingProject}
+            onClose={() => setEditingProject(null)}
+            onSave={(updated) => {
+              setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
+            }}
+          />
+
+          <WorkDetailCard 
+            project={selectedDetailProject}
+            onClose={() => setSelectedDetailProject(null)}
+          />
         </div>
 
         {/* Portfolio section */}
@@ -214,33 +310,64 @@ export default function CreatorDashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {portfolio.map(item => (
-                <motion.div 
-                  key={item.id}
-                  whileHover={{ y: -4 }}
-                  className="group bg-white border border-[#F0F0F0] p-4 transition-all duration-300"
-                >
-                  <div className="aspect-square relative overflow-hidden bg-[#FAFAFA] mb-4">
-                    {item.media_type === 'image' ? (
-                      <img src={item.media_url} alt={item.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-[#FAFAFA] border border-[#F0F0F0]">
-                        <PlayCircle className="w-8 h-8 text-[#0D1033]/20 group-hover:text-[#0D1033]/40 transition-colors" />
+              {portfolio.map(item => {
+                const firstMedia = item.items?.[0];
+                return (
+                  <motion.div 
+                    key={item.id}
+                    whileHover={{ y: -4 }}
+                    onClick={() => setSelectedDetailProject({
+                      ...item,
+                      mediaUrl: firstMedia?.media_url,
+                      mediaType: firstMedia?.media_type,
+                      items: (item.items || []).map(i => ({
+                        ...i,
+                        mediaUrl: i.media_url || i.mediaUrl,
+                        mediaType: i.media_type || i.mediaType
+                      })),
+                      author: user
+                    })}
+                    className="group bg-white border border-[#F0F0F0] p-4 transition-all duration-300 cursor-pointer"
+                  >
+                    <div className="aspect-square relative overflow-hidden bg-[#FAFAFA] mb-4">
+                      {firstMedia ? (
+                        firstMedia.media_type === 'image' ? (
+                          <img src={firstMedia.media_url} alt={item.title} className="w-full h-full object-cover transition-all duration-500" />
+                        ) : (
+                          <video 
+                            src={firstMedia.media_url} 
+                            className="w-full h-full object-cover transition-all duration-500"
+                            muted
+                            loop
+                            onMouseOver={e => e.target.play()}
+                            onMouseOut={e => e.target.pause()}
+                          />
+                        )
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-[#F0F0F0]" />
+                        </div>
+                      )}
+                      
+                      <div className="absolute top-0 left-0 px-2 py-1 bg-white border-r border-b border-[#F0F0F0] text-[8px] font-black uppercase tracking-widest text-[#0D1033]">
+                        {item.category}
                       </div>
-                    )}
-                    <div className="absolute top-0 left-0 px-2 py-1 bg-white border-r border-b border-[#F0F0F0] text-[8px] font-black uppercase tracking-widest text-[#0D1033]">
-                      {item.category}
+                      {firstMedia?.media_type === 'video' && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity">
+                          <PlayCircle className="w-8 h-8 text-white/50" />
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="px-1">
-                    <h3 className="text-xs font-black text-[#0D1033] truncate uppercase tracking-tighter">{item.title}</h3>
-                    <div className="flex justify-between items-center mt-2">
-                      <p className="text-[9px] font-bold text-[#9CA3AF] uppercase">{new Date(item.created_at).toLocaleDateString()}</p>
-                      <ArrowUpRight className="w-3 h-3 text-[#9CA3AF] group-hover:text-[#0D1033] transition-colors" />
+                    <div className="px-1">
+                      <h3 className="text-xs font-black text-[#0D1033] truncate uppercase tracking-tighter">{item.title}</h3>
+                      <div className="flex justify-between items-center mt-2">
+                        <p className="text-[9px] font-bold text-[#9CA3AF] uppercase">{new Date(item.created_at).toLocaleDateString()}</p>
+                        <ArrowUpRight className="w-3 h-3 text-[#9CA3AF] group-hover:text-[#0D1033] transition-colors" />
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </div>

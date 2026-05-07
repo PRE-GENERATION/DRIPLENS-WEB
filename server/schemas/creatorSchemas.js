@@ -25,6 +25,7 @@ export const updateProfileSchema = z.object({
   // Social links (from 20240003_add_social_links migration)
   instagram:     z.string().max(50).optional(),
   twitter:       z.string().max(50).optional(),
+  linkedin:      z.string().max(100).optional(),
   website:       z.string().url().or(z.literal('')).optional(),
   // Advanced filter fields (from 20240005 migration)
   min_budget:    z.number().optional(),
