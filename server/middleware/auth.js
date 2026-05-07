@@ -22,7 +22,8 @@ export const requireAuth = async (req, res, next) => {
   if (!token) return next(unauthorized('Authentication token required'));
 
   try {
-    if (isLocalAuth && token.startsWith('local-token-')) {
+    // Always try local-token first — supports hybrid dev mode (local auth + real Supabase DB)
+    if (token.startsWith('local-token-')) {
       const userId = token.replace('local-token-', '');
       const users = readUsers();
       const user = users.find(u => u.id === userId);

@@ -5,7 +5,6 @@ import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 import { useOnboarding } from '../context/OnboardingContext';
 import { api } from '../lib/api';
-import { supabase } from '../lib/supabase';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -500,33 +499,20 @@ function Step4({ onNext, onBack }) {
 }
 
 function Step5({ onBack, onSubmit, loading }) {
-  const { user } = useAuth();
   const { data, update } = useOnboarding();
   const fileRef = useRef();
   const resumeFileRef = useRef();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingResume, setUploadingResume] = useState(false);
 
-  const uploadFile = async (file, bucket = 'DripLens upload', folder = 'avatars') => {
+  const uploadFile = async (file, type = 'avatar') => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-      const filePath = `${user?.id || 'temp'}/${folder}/${fileName}`;
+      const formData = new FormData();
+      formData.append(type, file);
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(filePath);
-
-      return publicUrl;
+      const endpoint = `/upload/${type}`; // /upload/avatar or /upload/resume
+      const res = await api.post(endpoint, formData);
+      return res.data.publicUrl;
     } catch (error) {
       console.error('Error uploading file:', error.message);
       alert('Upload failed: ' + error.message);
@@ -539,7 +525,7 @@ function Step5({ onBack, onSubmit, loading }) {
     if (!file) return;
     
     setUploadingAvatar(true);
-    const url = await uploadFile(file, 'DripLens', 'avatars');
+    const url = await uploadFile(file, 'avatar');
     if (url) update({ avatar_url: url });
     setUploadingAvatar(false);
   };
@@ -549,7 +535,7 @@ function Step5({ onBack, onSubmit, loading }) {
     if (!file) return;
 
     setUploadingResume(true);
-    const url = await uploadFile(file, 'DripLens upload', 'resumes');
+    const url = await uploadFile(file, 'resume');
     if (url) update({ website: url });
     setUploadingResume(false);
   };
