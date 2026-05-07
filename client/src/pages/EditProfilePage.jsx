@@ -298,17 +298,35 @@ export default function EditProfilePage() {
     }
   };
 
-  const inputClass = (field) =>
-    `w-full border-b py-3 focus:outline-none transition-colors bg-transparent text-black placeholder:text-[#CCC] ${
-      errors[field] ? 'border-red-400' : 'border-[#DDD] focus:border-black'
-    }`;
+  const handleCancel = () => navigate(`/dashboard/${user?.role}`);
+
+  const inputStyle = { 
+    width: '100%', 
+    border: '0.5px solid #E8E8F0', 
+    borderRadius: '8px', 
+    padding: '8px 11px', 
+    fontSize: '12px', 
+    color: '#0D1033', 
+    background: '#FAFAFA', 
+    outline: 'none',
+    transition: 'border-color 0.2s'
+  };
+
+  const labelStyle = { 
+    fontSize: '10px', 
+    color: '#9CA3AF', 
+    letterSpacing: '.05em', 
+    textTransform: 'uppercase', 
+    marginBottom: '5px' 
+  };
 
   if (initialLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-20 min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#666]">Loading profile...</p>
+      <div style={{ minHeight: '100vh', background: '#F8F9FC', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: '24px', height: '24px', border: '2px solid #3B50E0', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ fontSize: '11px', color: '#9CA3AF' }}>Loading profile...</p>
         </div>
       </div>
     );
@@ -321,342 +339,327 @@ export default function EditProfilePage() {
         <meta name="description" content="Edit your Driplens profile" />
       </Helmet>
 
-      <div className="max-w-4xl mx-auto px-4 py-10 min-h-screen">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-4xl font-bold text-black mb-2 tracking-tight">Edit Profile</h1>
-          <p className="text-[#666] mb-12 text-sm">
-            {isCreator ? 'Showcase your work and let brands find you.' : 'Tell creators about your brand and what you\'re looking for.'}
-          </p>
-
-          {/* Banner Upload */}
-          <div className="mb-12">
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-4">
-              Banner Image
-            </label>
-            <div
-              onDragEnter={handleBannerDrag}
-              onDragLeave={handleBannerDrag}
-              onDragOver={handleBannerDrag}
-              onDrop={handleBannerDrop}
-              onClick={() => bannerInputRef.current?.click()}
-              className={`aspect-[3/1] border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center p-8 relative overflow-hidden ${
-                dragActiveBanner ? 'border-black bg-gray-50' : 'border-[#DDD] bg-white hover:border-black'
-              }`}
+      <div style={{ minHeight: '100vh', background: '#F8F9FC', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        {/* TOP HEADER BAR */}
+        <div style={{ background: '#fff', borderBottom: '0.5px solid #F0F0F0', padding: '14px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div>
+            <div style={{ fontSize: '14px', color: '#0D1033', fontWeight: '500' }}>Profile settings</div>
+            <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '2px' }}>Manage your public profile and personal information</div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              type="button"
+              onClick={handleCancel} 
+              style={{ fontSize: '11px', padding: '7px 16px', borderRadius: '8px', border: '0.5px solid #E0E0E8', background: '#fff', color: '#6B7280', cursor: 'pointer' }}
             >
-              <input
-                type="file"
-                className="hidden"
-                ref={bannerInputRef}
-                onChange={handleBannerChange}
-                accept="image/*"
-              />
-              {bannerPreview ? (
-                <img src={bannerPreview} alt="Banner Preview" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <>
-                  <svg className="w-10 h-10 text-[#CCC] mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <p className="text-xs font-bold uppercase tracking-widest text-black mb-1">Drag & Drop or Click</p>
-                  <p className="text-[10px] text-[#999]">Recommended: 1200×400px</p>
-                </>
-              )}
-            </div>
-            {errors.banner && <p className="text-red-500 text-xs mt-2">{errors.banner}</p>}
+              Cancel
+            </button>
+            <button 
+              type="button"
+              onClick={handleSubmit} 
+              disabled={loading}
+              style={{ fontSize: '11px', padding: '7px 18px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #3B50E0, #C060C0)', color: '#fff', cursor: 'pointer', opacity: loading ? 0.7 : 1 }}
+            >
+              {loading ? 'Saving...' : 'Save changes'}
+            </button>
+          </div>
+        </div>
+
+        {/* BODY */}
+        <div style={{ display: 'flex', flex: 1, maxWidth: '900px', margin: '0 auto', width: '100%', padding: '24px 24px' }}>
+
+          {/* LEFT SIDEBAR NAV */}
+          <div style={{ width: '160px', flexShrink: 0, marginRight: '24px' }}>
+            {[['Profile', true], ['Portfolio', false], ['Availability', false], ['Notifications', false], ['Security', false]].map(([label, active]) => (
+              <div 
+                key={label} 
+                style={{ fontSize: '12px', color: active ? '#0D1033' : '#6B7280', padding: '8px 12px', borderRadius: '8px', background: active ? '#F5F5FF' : 'transparent', fontWeight: active ? '500' : '400', cursor: 'pointer', marginBottom: '2px' }}
+              >
+                {label}
+              </div>
+            ))}
           </div>
 
-          {/* Avatar Upload */}
-          <div className="mb-12">
-            <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-4">
-              Avatar Image
-            </label>
-            <div
-              onDragEnter={handleAvatarDrag}
-              onDragLeave={handleAvatarDrag}
-              onDragOver={handleAvatarDrag}
-              onDrop={handleAvatarDrop}
-              onClick={() => avatarInputRef.current?.click()}
-              className={`w-32 h-32 border-2 border-dashed transition-all cursor-pointer flex items-center justify-center relative overflow-hidden rounded-lg ${
-                dragActiveAvatar ? 'border-black bg-gray-50' : 'border-[#DDD] bg-white hover:border-black'
-              }`}
-            >
-              <input
-                type="file"
-                className="hidden"
-                ref={avatarInputRef}
-                onChange={handleAvatarChange}
-                accept="image/*"
-              />
-              {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar Preview" className="absolute inset-0 w-full h-full object-cover" />
-              ) : (
-                <>
-                  <svg className="w-8 h-8 text-[#CCC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4v16m8-8H4" />
-                  </svg>
-                </>
-              )}
-            </div>
-            <p className="text-[10px] text-[#999] mt-2">Square image recommended (500×500px)</p>
-            {errors.avatar && <p className="text-red-500 text-xs mt-2">{errors.avatar}</p>}
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-8 max-w-2xl">
+          {/* MAIN CONTENT — CARDS */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            
             <AnimatePresence>
               {message.text && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className={`text-xs font-bold uppercase tracking-widest p-4 ${
-                    message.type === 'error'
-                      ? 'bg-red-50 text-red-600 border border-red-200'
-                      : 'bg-green-50 text-green-600 border border-green-200'
-                  }`}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  style={{ 
+                    padding: '12px 16px', 
+                    borderRadius: '12px', 
+                    fontSize: '11px',
+                    marginBottom: '4px',
+                    background: message.type === 'error' ? '#FEF2F2' : '#F0FDF4',
+                    color: message.type === 'error' ? '#991B1B' : '#166534',
+                    border: `0.5px solid ${message.type === 'error' ? '#FEE2E2' : '#DCFCE7'}`
+                  }}
                 >
                   {message.text}
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Bio */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                Bio {formData.bio.length > 0 && <span className="text-[#CCC] font-normal">({formData.bio.length}/500)</span>}
-              </label>
-              <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleInputChange}
-                placeholder="Tell your story..."
-                rows="4"
-                className={`w-full border rounded p-3 focus:outline-none transition-colors resize-none bg-transparent ${
-                  errors.bio ? 'border-red-400' : 'border-[#DDD] focus:border-black'
-                }`}
-                maxLength="500"
-              />
-              {errors.bio && <p className="text-red-500 text-xs mt-2">{errors.bio}</p>}
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                {isCreator ? 'Specialty' : 'Industry'}
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className={`w-full border-b py-3 bg-transparent focus:outline-none transition-colors appearance-none ${
-                  errors.category ? 'border-red-400' : 'border-[#DDD] focus:border-black'
-                }`}
-              >
-                <option value="">Select a category...</option>
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-              {errors.category && <p className="text-red-500 text-xs mt-2">{errors.category}</p>}
-            </div>
-
-            {/* Location */}
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                Location
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                placeholder="City, Country"
-                className={inputClass('location')}
-              />
-              {errors.location && <p className="text-red-500 text-xs mt-2">{errors.location}</p>}
-            </div>
-
-            {/* Social Links */}
-            <div className="pt-4 border-t border-[#EEE]">
-              <h3 className="text-sm font-bold text-black mb-6">Social Links (Optional)</h3>
-
-              <div className="space-y-6">
+            {/* CARD 1 — Profile photo */}
+            <div style={{ background: '#fff', border: '0.5px solid #F0F0F0', borderRadius: '14px', padding: '20px 22px' }}>
+              <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Profile photo</div>
+              <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '14px' }}>This will be displayed on your public profile</div>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+                <div 
+                  onClick={() => avatarInputRef.current?.click()}
+                  style={{ 
+                    width: '52px', 
+                    height: '52px', 
+                    borderRadius: '50%', 
+                    background: avatarPreview ? `url(${avatarPreview}) center/cover no-repeat` : 'linear-gradient(135deg, #3B50E0, #C060C0)', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    fontSize: '18px', 
+                    color: '#fff', 
+                    flexShrink: 0, 
+                    cursor: 'pointer',
+                    overflow: 'hidden'
+                  }}
+                >
+                  {!avatarPreview && user?.username?.[0]?.toUpperCase()}
+                </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Instagram Handle
-                  </label>
+                  <input type="file" ref={avatarInputRef} onChange={handleAvatarChange} className="hidden" accept="image/*" />
+                  <button 
+                    type="button"
+                    onClick={() => avatarInputRef.current?.click()}
+                    style={{ fontSize: '10px', padding: '6px 14px', border: '0.5px solid #E0E0E8', borderRadius: '7px', background: '#fff', color: '#0D1033', cursor: 'pointer', marginRight: '8px' }}
+                  >
+                    Upload new photo
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { setAvatarFile(null); setAvatarPreview(null); }}
+                    style={{ fontSize: '10px', padding: '6px 14px', border: '0.5px solid #F09595', borderRadius: '7px', background: '#fff', color: '#E24B4A', cursor: 'pointer' }}
+                  >
+                    Remove
+                  </button>
+                  <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '6px' }}>JPG, PNG or WebP — max 5MB</div>
+                </div>
+              </div>
+
+              {/* Banner / Cover Photo - Keeping existing logic */}
+              <div style={{ borderTop: '0.5px solid #F0F0F0', paddingTop: '20px' }}>
+                <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Cover photo</div>
+                <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '14px' }}>Recommended: 1200×400px</div>
+                <div 
+                  onClick={() => bannerInputRef.current?.click()}
+                  style={{ 
+                    width: '100%', 
+                    height: '100px', 
+                    borderRadius: '10px', 
+                    border: '1px dashed #E0E0E8', 
+                    background: bannerPreview ? `url(${bannerPreview}) center/cover no-repeat` : '#FAFAFA',
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <input type="file" ref={bannerInputRef} onChange={handleBannerChange} className="hidden" accept="image/*" />
+                  {!bannerPreview && <span style={{ fontSize: '10px', color: '#9CA3AF' }}>Click to upload cover photo</span>}
+                </div>
+                {errors.banner && <p style={{ color: '#E24B4A', fontSize: '10px', marginTop: '4px' }}>{errors.banner}</p>}
+              </div>
+            </div>
+
+            {/* CARD 2 — Personal details */}
+            <div style={{ background: '#fff', border: '0.5px solid #F0F0F0', borderRadius: '14px', padding: '20px 22px' }}>
+              <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Personal details</div>
+              <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '16px' }}>Update your {isCreator ? 'specialty' : 'industry'}, bio and location</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                
+                {/* Category/Specialty */}
+                <div>
+                  <div style={labelStyle}>{isCreator ? 'Specialty' : 'Industry'}</div>
+                  <select
+                    name="category"
+                    value={formData.category}
+                    onChange={handleInputChange}
+                    style={inputStyle}
+                  >
+                    <option value="">Select a category...</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Location */}
+                <div>
+                  <div style={labelStyle}>Location</div>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleInputChange}
+                    placeholder="City, Country"
+                    style={inputStyle}
+                  />
+                  {errors.location && <p style={{ color: '#E24B4A', fontSize: '10px', marginTop: '4px' }}>{errors.location}</p>}
+                </div>
+
+                {/* Bio */}
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={labelStyle}>Bio {formData.bio.length > 0 && `(${formData.bio.length}/500)`}</div>
+                  <textarea
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleInputChange}
+                    placeholder="Tell your story..."
+                    rows="3"
+                    maxLength="500"
+                    style={{ ...inputStyle, resize: 'none' }}
+                  />
+                  {errors.bio && <p style={{ color: '#E24B4A', fontSize: '10px', marginTop: '4px' }}>{errors.bio}</p>}
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3 — Social links */}
+            <div style={{ background: '#fff', border: '0.5px solid #F0F0F0', borderRadius: '14px', padding: '20px 22px' }}>
+              <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Social links</div>
+              <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '16px' }}>Add your social media profiles</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <div style={labelStyle}>Instagram</div>
                   <input
                     type="text"
                     name="instagram"
                     value={formData.instagram}
                     onChange={handleInputChange}
-                    placeholder="yourhandle (without the @)"
-                    className={inputClass('instagram')}
+                    placeholder="handle"
+                    style={inputStyle}
                   />
                 </div>
-
                 <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Twitter/X Handle
-                  </label>
+                  <div style={labelStyle}>Twitter / X</div>
                   <input
                     type="text"
                     name="twitter"
                     value={formData.twitter}
                     onChange={handleInputChange}
-                    placeholder="yourhandle (without the @)"
-                    className={inputClass('twitter')}
+                    placeholder="handle"
+                    style={inputStyle}
                   />
                 </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Website
-                  </label>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <div style={labelStyle}>Website</div>
                   <input
                     type="url"
                     name="website"
                     value={formData.website}
                     onChange={handleInputChange}
-                    placeholder="https://yourwebsite.com"
-                    className={inputClass('website')}
+                    placeholder="https://..."
+                    style={inputStyle}
                   />
-                  {errors.website && <p className="text-red-500 text-xs mt-2">{errors.website}</p>}
+                  {errors.website && <p style={{ color: '#E24B4A', fontSize: '10px', marginTop: '4px' }}>{errors.website}</p>}
                 </div>
               </div>
             </div>
 
-            {/* Creator Specific Settings */}
+            {/* CARD 4 — Creator Discovery Settings */}
             {isCreator && (
-              <div className="pt-4 border-t border-[#EEE] space-y-8">
-                <h3 className="text-sm font-bold text-black">Creator Discovery Settings</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div style={{ background: '#fff', border: '0.5px solid #F0F0F0', borderRadius: '14px', padding: '20px 22px' }}>
+                <div style={{ fontSize: '12px', color: '#0D1033', fontWeight: '500', marginBottom: '2px' }}>Discovery settings</div>
+                <div style={{ fontSize: '10px', color: '#9CA3AF', marginBottom: '16px' }}>Manage how brands find and hire you</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                      Min Budget ($)
-                    </label>
+                    <div style={labelStyle}>Min Budget ($)</div>
                     <input
                       type="number"
                       name="min_budget"
                       value={formData.min_budget}
                       onChange={handleInputChange}
-                      className={inputClass('min_budget')}
+                      style={inputStyle}
                     />
-                    {errors.min_budget && <p className="text-red-500 text-xs mt-2">{errors.min_budget}</p>}
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                      Max Budget ($)
-                    </label>
+                    <div style={labelStyle}>Max Budget ($)</div>
                     <input
                       type="number"
                       name="max_budget"
                       value={formData.max_budget}
                       onChange={handleInputChange}
-                      className={inputClass('max_budget')}
+                      style={inputStyle}
                     />
-                    {errors.max_budget && <p className="text-red-500 text-xs mt-2">{errors.max_budget}</p>}
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Follower Count
-                  </label>
-                  <input
-                    type="number"
-                    name="follower_count"
-                    value={formData.follower_count}
-                    onChange={handleInputChange}
-                    className={inputClass('follower_count')}
-                  />
-                  {errors.follower_count && <p className="text-red-500 text-xs mt-2">{errors.follower_count}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-4">
-                    Platforms
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Instagram', 'TikTok', 'YouTube', 'Twitter', 'Twitch', 'LinkedIn'].map(plt => (
-                      <button
-                        key={plt}
-                        type="button"
-                        onClick={() => handlePlatformToggle(plt)}
-                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all border ${
-                          formData.platforms.includes(plt)
-                            ? 'bg-black border-black text-white shadow-lg'
-                            : 'bg-white border-gray-100 text-gray-400 hover:border-black hover:text-black'
-                        }`}
-                      >
-                        {plt}
-                      </button>
-                    ))}
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={labelStyle}>Follower Count</div>
+                    <input
+                      type="number"
+                      name="follower_count"
+                      value={formData.follower_count}
+                      onChange={handleInputChange}
+                      style={inputStyle}
+                    />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-widest text-[#999] mb-3">
-                    Tags (Comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    defaultValue={formData.tags.join(', ')}
-                    onBlur={handleTagsChange}
-                    placeholder="cinematic, storytelling, minimal"
-                    className="w-full border-b py-3 border-[#DDD] focus:border-black focus:outline-none transition-colors bg-transparent text-black"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                  <div>
-                    <p className="text-xs font-bold text-black">Available for Hire</p>
-                    <p className="text-[10px] text-[#999]">Show "Available Now" badge on your profile</p>
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={labelStyle}>Platforms</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px' }}>
+                      {['Instagram', 'TikTok', 'YouTube', 'Twitter', 'Twitch', 'LinkedIn'].map(plt => (
+                        <button
+                          key={plt}
+                          type="button"
+                          onClick={() => handlePlatformToggle(plt)}
+                          style={{
+                            padding: '5px 12px',
+                            borderRadius: '100px',
+                            fontSize: '10px',
+                            border: '0.5px solid #E0E0E8',
+                            background: formData.platforms.includes(plt) ? '#3B50E0' : '#fff',
+                            color: formData.platforms.includes(plt) ? '#fff' : '#6B7280',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {plt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <input
-                    type="checkbox"
-                    name="is_available"
-                    checked={formData.is_available}
-                    onChange={handleInputChange}
-                    className="w-5 h-5 accent-black cursor-pointer"
-                  />
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={labelStyle}>Tags (Comma separated)</div>
+                    <input
+                      type="text"
+                      defaultValue={formData.tags.join(', ')}
+                      onBlur={handleTagsChange}
+                      placeholder="cinematic, storytelling..."
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: '#F9FAFB', borderRadius: '10px', marginTop: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: '#0D1033', fontWeight: '500' }}>Available for hire</div>
+                      <div style={{ fontSize: '9px', color: '#9CA3AF' }}>Show availability badge on profile</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      name="is_available"
+                      checked={formData.is_available}
+                      onChange={handleInputChange}
+                      style={{ width: '16px', height: '16px', accentColor: '#3B50E0', cursor: 'pointer' }}
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Submit Button */}
-            <div className="flex gap-4 pt-8">
-              <button
-                type="button"
-                onClick={() => navigate(`/dashboard/${user.role}`)}
-                className="flex-1 border border-black text-black py-4 font-bold text-xs uppercase tracking-[0.2em] hover:bg-black/5 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className={`flex-1 bg-black text-white py-4 font-bold text-xs uppercase tracking-[0.2em] hover:bg-black/90 transition-all ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Saving...
-                  </span>
-                ) : (
-                  'Save Changes'
-                )}
-              </button>
-            </div>
-          </form>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </>
   );

@@ -167,7 +167,7 @@ export default function BrandDashboard() {
             <Link to="/messages" className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] font-bold text-[#AAAAAA] hover:text-black transition-colors">
               <MessageSquare className="w-3.5 h-3.5" /> Messages
             </Link>
-            <Link to="/edit-profile" className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] font-bold text-[#AAAAAA] hover:text-black transition-colors">
+            <Link to="/profile/edit" className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] font-bold text-[#AAAAAA] hover:text-black transition-colors">
               <User className="w-3.5 h-3.5" /> Profile
             </Link>
           </div>

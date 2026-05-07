@@ -199,6 +199,9 @@ function App() {
                       <Route path="/upload" element={
                         <ProtectedRoute requiredRole="creator"><UploadPage /></ProtectedRoute>
                       } />
+                      <Route path="/messages" element={
+                        <ProtectedRoute><MessagingPage /></ProtectedRoute>
+                      } />
                       <Route path="/dashboard/creator" element={
                         <ProtectedRoute requiredRole="creator"><CreatorDashboard /></ProtectedRoute>
                       } />
