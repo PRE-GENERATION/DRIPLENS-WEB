@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const MOCK_CREATOR = {
@@ -14,6 +14,7 @@ const MOCK_CREATOR = {
 
 export default function DirectMessagePage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([
     { id: 1, text: "Hey! I saw your portfolio and I love your work.", sender: 'me', time: '10:41 AM', status: 'read' },
     { id: 2, text: "Are you taking on new projects? We have a commercial shoot next month.", sender: 'me', time: '10:42 AM', status: 'read' },
@@ -98,6 +99,27 @@ export default function DirectMessagePage() {
               <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Base Rate</p>
               <p className="text-sm font-bold text-black">{MOCK_CREATOR.rate}</p>
             </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-6 space-y-3 w-full max-w-xs">
+            <a
+              href="https://meet.google.com/new"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-[#0540F2] text-white font-black uppercase tracking-widest py-3 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              Start Google Meet
+            </a>
+            <button
+              onClick={() => navigate('/checkout', { state: { creator: MOCK_CREATOR, pkg: null } })}
+              className="w-full flex items-center justify-center gap-2 bg-white text-black font-black uppercase tracking-widest py-3 border-[3px] border-black shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform"
+            >
+              Fix a Deal →
+            </button>
           </div>
         </div>
       </div>

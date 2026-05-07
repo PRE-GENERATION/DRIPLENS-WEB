@@ -139,6 +139,45 @@ export const uploadProfileImage = async (userId, file, type) => {
   return { publicUrl, storagePath: filePath };
 };
 
+/**
+ * Upload a deliverable file for a project to Supabase Storage.
+ * Path: deliverables/{projectId}/{userId}_{uuid}.{ext}
+ * Returns { publicUrl, storagePath }.
+ */
+export const uploadDeliverable = async (userId, projectId, file) => {
+  validateFile(file);
+
+  const ext      = file.originalname.split('.').pop().toLowerCase();
+  const safeName = `${userId}_${uuidv4()}.${ext}`;
+  const filePath = `deliverables/${projectId}/${safeName}`;
+
+  if (env.SUPABASE_URL.includes('dummy')) {
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'deliverables', projectId);
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    fs.writeFileSync(path.join(uploadDir, safeName), file.buffer);
+    const publicUrl = `http://localhost:${env.PORT || 5001}/uploads/deliverables/${projectId}/${safeName}`;
+    return { publicUrl, storagePath: filePath };
+  }
+
+  const { error: uploadError } = await supabase.storage
+    .from('DripLens upload')
+    .upload(filePath, file.buffer, {
+      contentType: file.mimetype,
+      cacheControl: '3600',
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new AppError(uploadError.message || 'Deliverable upload failed', 500, 'STORAGE_UPLOAD_FAILED');
+  }
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('DripLens upload')
+    .getPublicUrl(filePath);
+
+  return { publicUrl, storagePath: filePath };
+};
+
 export const listPortfolio = async ({ page = 1, limit = 10, creator_id }) => {
   const pageNum = parseInt(page) || 1;
   const limitNum = parseInt(limit) || 10;

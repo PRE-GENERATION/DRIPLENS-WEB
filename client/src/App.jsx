@@ -27,6 +27,7 @@ import CreatorDashboard from './pages/CreatorDashboard';
 import BrandDashboard from './pages/BrandDashboard';
 
 import DirectMessagePage from './pages/DirectMessagePage';
+// MessagingPage removed — use DirectMessagePage at /dm/:id
 import CheckoutPage from './pages/CheckoutPage';
 import ProjectProgressPage from './pages/ProjectProgressPage';
 
@@ -101,9 +102,6 @@ const AppLayout = () => {
           <Route path="/terms" element={<TermsPage />} />
 
           {/* Protected — any logged-in user */}
-          <Route path="/messages" element={
-            <ProtectedRoute><MessagingPage /></ProtectedRoute>
-          } />
           <Route path="/dm/:id" element={<DirectMessagePage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/progress" element={<ProjectProgressPage />} />
@@ -178,9 +176,7 @@ function App() {
                       <Route path="/terms" element={<TermsPage />} />
 
                       {/* Protected — any logged-in user */}
-                      <Route path="/messages" element={
-                        <ProtectedRoute><MessagingPage /></ProtectedRoute>
-                      } />
+                      <Route path="/dm/:id" element={<DirectMessagePage />} />
                       <Route path="/profile/edit" element={
                         <ProtectedRoute><EditProfilePage /></ProtectedRoute>
                       } />
