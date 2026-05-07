@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
@@ -55,9 +55,20 @@ import ContactPage from './pages/ContactPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 
+import { useAuth } from './context/AuthContext';
+
+/** Redirects /profile/me → /profile/:userId, or /auth if not logged in */
+function ProfileMeRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" /></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  return <Navigate to={`/profile/${user.id}`} replace />;
+}
+
 const AppLayout = () => {
   const location = useLocation();
   const isDriplens = location.pathname.startsWith('/driplens');
+
   const isDM = location.pathname.startsWith('/dm');
 
   return (
@@ -154,6 +165,7 @@ function App() {
                       <Route path="/creators" element={<CreatorsPage />} />
                       <Route path="/brands" element={<BrandsPage />} />
                       <Route path="/explore" element={<ExplorePage />} />
+                      <Route path="/profile/me" element={<ProfileMeRedirect />} />
                       <Route path="/profile/:id" element={<CreatorProfilePage />} />
                       <Route path="/brand/:id" element={<BrandProfilePage />} />
 
@@ -182,6 +194,7 @@ function App() {
                       <Route path="/messages" element={
                         <ProtectedRoute><MessagingPage /></ProtectedRoute>
                       } />
+                      <Route path="/dm/:id" element={<DirectMessagePage />} />
                       <Route path="/profile/edit" element={
                         <ProtectedRoute><EditProfilePage /></ProtectedRoute>
                       } />

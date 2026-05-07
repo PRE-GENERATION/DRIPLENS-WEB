@@ -98,7 +98,11 @@ export const getCreator = async (id) => {
     .eq('id', id)
     .single();
 
-  if (error || !data) throw notFound('Creator not found');
+  if (error) {
+    console.error('Database error in getCreator:', error.message, error.details);
+    throw notFound('Creator not found');
+  }
+  if (!data) throw notFound('Creator not found');
   return data;
 };
 
