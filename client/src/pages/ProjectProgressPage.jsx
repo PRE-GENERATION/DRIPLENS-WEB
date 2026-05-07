@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 export default function ProjectProgressPage() {
   const location = useLocation();
+  const [revisionRequested, setRevisionRequested] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [approved, setApproved] = useState(false);
   const { pkg, creator } = location.state || {
     creator: { name: 'Atharv Gadekar', img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500' },
     pkg: { title: 'Cinematography Package' }
@@ -83,14 +87,68 @@ export default function ProjectProgressPage() {
               </div>
             </div>
 
-            {/* Step 4: Pending */}
-            <div className="relative flex items-start gap-8 group z-10">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full border-[3px] border-zinc-300 border-dashed bg-white shrink-0">
-                <span className="text-zinc-300 font-black">4</span>
+            {/* Step 4: Interactive Final Delivery */}
+            <div className="relative flex items-start gap-8 group z-10 mt-12">
+              <div className={`flex items-center justify-center w-12 h-12 rounded-full border-[3px] border-black shrink-0 ${submitted ? 'bg-black text-white' : 'bg-white'}`}>
+                {submitted ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/></svg>
+                ) : <span className="font-black text-zinc-400">4</span>}
               </div>
-              <div className="flex-1 p-6 border-[3px] border-zinc-300 border-dashed bg-zinc-50">
-                <h3 className="font-black text-xl md:text-2xl uppercase text-zinc-400 mb-2">Final Delivery</h3>
-                <p className="text-sm font-bold text-zinc-400">Awaiting final revisions and export.</p>
+              <div className="flex-1 p-6 border-[3px] border-black bg-white shadow-[6px_6px_0px_rgba(0,0,0,1)]">
+                <h3 className="font-black text-xl uppercase mb-2">Final Delivery</h3>
+
+                {/* Creator submits */}
+                {!submitted && (
+                  <button
+                    onClick={() => setSubmitted(true)}
+                    className="mt-2 bg-black text-white font-black uppercase tracking-widest px-6 py-3 border-2 border-black hover:-translate-y-0.5 transition-transform shadow-[4px_4px_0px_rgba(0,0,0,0.3)]"
+                  >
+                    Submit Project →
+                  </button>
+                )}
+
+                {/* Brand reviews */}
+                {submitted && !approved && !revisionRequested && (
+                  <div className="space-y-3 mt-2">
+                    <p className="text-sm font-bold text-zinc-600">Project submitted. Awaiting brand approval.</p>
+                    <div className="flex gap-3 flex-wrap">
+                      <button
+                        onClick={() => setApproved(true)}
+                        className="bg-green-500 text-white font-black uppercase tracking-widest px-5 py-2 border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform"
+                      >
+                        Approve & Release Payment
+                      </button>
+                      <button
+                        onClick={() => setRevisionRequested(true)}
+                        className="bg-yellow-400 text-black font-black uppercase tracking-widest px-5 py-2 border-2 border-black shadow-[3px_3px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-transform"
+                      >
+                        Request Revision
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Revision requested */}
+                {revisionRequested && !approved && (
+                  <div className="mt-2 p-4 bg-yellow-50 border-2 border-yellow-400">
+                    <p className="text-sm font-black text-yellow-700 uppercase">Revision Requested</p>
+                    <p className="text-xs text-zinc-600 mt-1">Brand has requested changes. Creator will update and resubmit.</p>
+                    <button
+                      onClick={() => { setRevisionRequested(false); setSubmitted(false); }}
+                      className="mt-3 bg-[#0540F2] text-white font-black uppercase text-xs px-4 py-2 border-2 border-black"
+                    >
+                      Resubmit After Changes
+                    </button>
+                  </div>
+                )}
+
+                {/* Approved — payment released */}
+                {approved && (
+                  <div className="mt-2 p-4 bg-green-50 border-2 border-green-500">
+                    <p className="text-sm font-black text-green-700 uppercase">✅ Approved! Payment Released.</p>
+                    <p className="text-xs text-zinc-600 mt-1">Funds have been released to the creator. Project complete!</p>
+                  </div>
+                )}
               </div>
             </div>
 
