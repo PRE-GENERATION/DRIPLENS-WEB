@@ -2,259 +2,216 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Calendar, 
-  IndianRupee, 
-  BadgeCheck, 
-  Share2, 
-  AlertCircle,
-  Clock,
-  Box,
-  FileText,
-  Instagram,
-  CheckCircle2,
-  X
-} from 'lucide-react';
-import { api } from '../lib/api';
-import { useAuth } from '../context/AuthContext';
+import { demoPhotographyOpportunities } from '../data/demoPhotographyOpportunities';
 
 export default function OpportunityDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user, isLoggedIn } = useAuth();
   
   const [opportunity, setOpportunity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showApplyDrawer, setShowApplyDrawer] = useState(false);
-  const [applyLoading, setApplyLoading] = useState(false);
   const [applySuccess, setApplySuccess] = useState(false);
-  
-  // Application Form
-  const [appData, setAppData] = useState({
-    reel_links: '',
-    intro_message: '',
-    expected_price: '',
-    intro_video_url: ''
-  });
+  const [pitch, setPitch] = useState('');
+  const [workLink, setWorkLink] = useState('');
+  const [bidAmount, setBidAmount] = useState('');
+  const [bidError, setBidError] = useState('');
 
   useEffect(() => {
-    fetchOpportunity();
+    // Find the opportunity in our demo data
+    const found = demoPhotographyOpportunities.find(opp => opp.id === id);
+    setOpportunity(found);
+    setLoading(false);
   }, [id]);
 
-  const fetchOpportunity = async () => {
-    try {
-      const res = await api.get(`/opportunities/${id}`);
-      setOpportunity(res.data);
-    } catch (err) {
-      console.error('Failed to fetch opportunity:', err);
-    } finally {
-      setLoading(false);
-    }
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = date.toLocaleString('en-GB', { month: 'short' }).toUpperCase();
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
   };
 
-  const handleApply = async (e) => {
+  const handleApply = (e) => {
     e.preventDefault();
-    if (!isLoggedIn) {
-      navigate('/auth?mode=register&role=creator');
+    if (!bidAmount || parseInt(bidAmount) <= 0) {
+      setBidError('Please enter a valid bid amount greater than zero.');
       return;
     }
-    setApplyLoading(true);
-    try {
-      await api.post(`/opportunities/${id}/apply`, {
-        ...appData,
-        reel_links: appData.reel_links.split(',').map(l => l.trim()),
-        expected_price: parseFloat(appData.expected_price)
-      });
-      setApplySuccess(true);
-      setTimeout(() => {
-        setShowApplyDrawer(false);
-        setApplySuccess(false);
-      }, 3000);
-    } catch (err) {
-      alert(err.message || 'Failed to apply');
-    } finally {
-      setApplyLoading(false);
+    
+    // Optional check: bid <= budget
+    if (opportunity.budgetAmount > 0 && parseInt(bidAmount) > opportunity.budgetAmount) {
+      setBidError(`Bid cannot exceed the campaign budget of ₹${opportunity.budgetAmount.toLocaleString()}`);
+      return;
     }
+
+    const applicationData = {
+      opportunityId: opportunity.id,
+      campaignTitle: opportunity.campaignTitle,
+      pitch,
+      workLink,
+      bidAmount: parseInt(bidAmount)
+    };
+
+    console.log('Application Submitted:', applicationData);
+
+    setBidError('');
+    setApplySuccess(true);
+    setTimeout(() => {
+      setShowApplyDrawer(false);
+      setApplySuccess(false);
+      setPitch('');
+      setWorkLink('');
+      setBidAmount('');
+    }, 2000);
   };
 
   if (loading) return <div className="min-h-screen bg-white flex items-center justify-center"><div className="w-8 h-8 border-4 border-black border-t-transparent animate-spin" /></div>;
-  if (!opportunity) return <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4"><h1 className="text-4xl font-black uppercase">Not Found</h1><Link to="/opportunities" className="underline font-bold uppercase tracking-widest text-xs">Back to all</Link></div>;
-
-  const timeLeft = new Date(opportunity.application_deadline) - new Date();
-  const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+  
+  if (!opportunity) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6 px-8 text-center">
+        <h1 className="text-4xl font-black uppercase tracking-tighter">Opportunity not found</h1>
+        <p className="text-gray-500 uppercase tracking-widest font-bold text-sm">The campaign you are looking for might have expired or doesn't exist.</p>
+        <Link to="/opportunities" className="px-8 py-4 bg-black text-white font-black uppercase tracking-widest text-xs">Back to all opportunities</Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white font-sans text-[#0F172A]">
       <Helmet>
-        <title>{opportunity.title} — Driplens</title>
+        <title>{opportunity.campaignTitle} — Driplens</title>
       </Helmet>
 
-      {/* Hero Header */}
-      <div className="border-b-2 border-black px-8 py-12 md:py-24">
-        <div className="max-w-6xl mx-auto">
-          <button onClick={() => navigate('/opportunities')} className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:text-[#0044ff] mb-12">
-            <ArrowLeft size={16} /> Back to List
-          </button>
+      <div className="max-w-6xl mx-auto px-6 py-8 md:py-12">
+        {/* Navigation */}
+        <button 
+          onClick={() => navigate('/opportunities')} 
+          className="text-[14px] font-medium uppercase tracking-widest text-[#64748B] hover:text-[#0F172A] transition-colors mb-12"
+        >
+          BACK TO LIST
+        </button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-12 lg:gap-20 items-start">
           
-          <div className="flex flex-col md:flex-row justify-between items-start gap-8">
-            <div className="flex-1">
-              <div className="flex flex-wrap gap-4 mb-6">
-                {opportunity.niche?.map(n => (
-                  <span key={n} className="px-3 py-1 bg-black text-white text-[10px] font-black uppercase tracking-widest">{n}</span>
-                ))}
-                <span className="px-3 py-1 border-2 border-black text-[10px] font-black uppercase tracking-widest">{opportunity.budget_type}</span>
-              </div>
-              <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-none mb-6">{opportunity.title}</h1>
-              
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 border-2 border-black overflow-hidden shrink-0">
-                    <img src={opportunity.brand?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Posted by</p>
-                    <div className="flex items-center gap-1">
-                      <p className="font-black text-sm uppercase tracking-tight">{opportunity.brand?.username}</p>
-                      {opportunity.brand?.is_verified && <BadgeCheck size={14} className="text-[#0044ff]" />}
-                    </div>
-                  </div>
-                </div>
-                <div className="h-8 w-[1px] bg-gray-100" />
-                <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-widest">
-                  <MapPin size={14} /> {opportunity.city || 'Global'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Content Layout */}
-      <div className="max-w-6xl mx-auto px-8 py-20 flex flex-col lg:flex-row gap-20">
-        
-        {/* Left Column: Details */}
-        <div className="flex-1 space-y-20">
-          
-          {/* Description */}
-          <div className="space-y-6">
-            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-gray-300">Campaign Overview</h3>
-            <div className="prose prose-lg max-w-none font-medium leading-relaxed text-gray-700">
-              {opportunity.description}
-            </div>
-          </div>
-
-          {/* Goals */}
-          {opportunity.campaign_goal && (
-            <div className="space-y-6 p-8 bg-gray-50 border-l-4 border-black">
-              <h3 className="text-sm font-black uppercase tracking-[0.3em] text-black">Campaign Goal</h3>
-              <p className="text-lg font-bold leading-relaxed">{opportunity.campaign_goal}</p>
-            </div>
-          )}
-
-          {/* Deliverables Grid */}
-          <div className="space-y-8">
-            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-gray-300">Required Deliverables</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-1 bg-black border-2 border-black">
-              <div className="bg-white p-8 text-center">
-                <p className="text-4xl font-black mb-1">{opportunity.num_reels || 0}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Reels</p>
-              </div>
-              <div className="bg-white p-8 text-center">
-                <p className="text-4xl font-black mb-1">{opportunity.num_stories || 0}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Stories</p>
-              </div>
-              <div className="bg-white p-8 text-center">
-                <p className="text-4xl font-black mb-1">{opportunity.num_photos || 0}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Photos</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Requirements */}
-          <div className="space-y-8">
-            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-gray-300">Creator Requirements</h3>
+          {/* Left Column: Main Campaign Info */}
+          <div className="space-y-12 max-w-[640px]">
+            {/* Header section */}
             <div className="space-y-4">
-              <div className="flex justify-between py-4 border-b border-gray-100">
-                <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Minimum Followers</span>
-                <span className="text-xs font-black uppercase tracking-widest">{opportunity.min_followers?.toLocaleString()}</span>
+              <h1 className="text-[40px] md:text-[48px] font-bold tracking-tight leading-[1.1] text-[#0F172A]">
+                {opportunity.campaignTitle}
+              </h1>
+              <div className="space-y-1">
+                <p className="text-lg font-bold text-[#0F172A]">{opportunity.brandName}</p>
+                <p className="text-[16px] text-[#475569] leading-relaxed">
+                  {opportunity.brandIntroduction}
+                </p>
               </div>
-              <div className="flex justify-between py-4 border-b border-gray-100">
-                <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Gender Preference</span>
-                <span className="text-xs font-black uppercase tracking-widest">{opportunity.gender_preference}</span>
+            </div>
+
+            {/* Campaign Goal */}
+            <div className="space-y-3">
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#94A3B8]">
+                Campaign Goal
+              </h3>
+              <p className="text-[18px] text-[#334155] leading-relaxed">
+                {opportunity.campaignGoal}
+              </p>
+            </div>
+
+            {/* Deliverables */}
+            <div className="space-y-6">
+              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#94A3B8]">
+                Required Deliverables
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-6 bg-[#F1F5F9] rounded-sm text-center space-y-1">
+                  <p className="text-3xl font-bold text-[#0F172A]">{opportunity.deliverables.reels}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Reels</p>
+                </div>
+                <div className="p-6 bg-[#F1F5F9] rounded-sm text-center space-y-1">
+                  <p className="text-3xl font-bold text-[#0F172A]">{opportunity.deliverables.stories}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Stories</p>
+                </div>
+                <div className="p-6 bg-[#F1F5F9] rounded-sm text-center space-y-1">
+                  <p className="text-3xl font-bold text-[#0F172A]">{opportunity.deliverables.photos}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Photos</p>
+                </div>
               </div>
-              <div className="flex justify-between py-4 border-b border-gray-100">
-                <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Target Languages</span>
-                <span className="text-xs font-black uppercase tracking-widest">{opportunity.language?.join(', ') || 'Any'}</span>
+            </div>
+
+            {/* Requirements (Supplementary) */}
+            <div className="pt-8 border-t border-[#E2E8F0] space-y-8">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8]">Target</h4>
+                  <ul className="space-y-2 text-sm font-medium">
+                    <li><span className="text-[#94A3B8]">CITY:</span> {opportunity.city.join(', ')}</li>
+                    <li><span className="text-[#94A3B8]">NICHE:</span> {opportunity.niche.join(', ')}</li>
+                    <li><span className="text-[#94A3B8]">LANGUAGE:</span> {opportunity.language.join(', ')}</li>
+                  </ul>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8]">Creator</h4>
+                  <ul className="space-y-2 text-sm font-medium">
+                    <li><span className="text-[#94A3B8]">FOLLOWERS:</span> {opportunity.followersRange.min.toLocaleString()} - {opportunity.followersRange.max.toLocaleString()}</li>
+                    <li><span className="text-[#94A3B8]">GENDER:</span> {opportunity.genderPreference}</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Right Column: Sticky Action Panel */}
-        <div className="lg:w-96">
-          <div className="sticky top-32 space-y-8">
-            
-            {/* Apply Box */}
-            <div className="border-2 border-black p-8 bg-white">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Budget</p>
-                  <div className="flex items-center gap-1 text-3xl font-black">
-                    <IndianRupee size={20} /> {Number(opportunity.budget_amount || 0).toLocaleString()}
-                  </div>
+          {/* Right Column: Summary Box */}
+          <div className="lg:sticky lg:top-8 w-full">
+            <div className="bg-white border border-[#E2E8F0] shadow-[0px_4px_20px_rgba(203,213,225,0.3)] p-8 rounded-sm space-y-8">
+              {/* Budget */}
+              <div className="space-y-2">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8]">Campaign Budget</h3>
+                <p className="text-[24px] font-bold text-[#1E293B]">
+                  {opportunity.budgetType} {opportunity.budgetAmount > 0 && `₹${opportunity.budgetAmount.toLocaleString()}`}
+                </p>
+              </div>
+
+              <div className="h-[1px] bg-[#E2E8F0]" />
+
+              {/* Deadlines */}
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8]">Application Deadline</h3>
+                  <p className="text-[16px] font-bold text-[#1E293B]">{formatDate(opportunity.applicationDeadline)}</p>
                 </div>
-                <div className={`px-2 py-1 text-[8px] font-black uppercase tracking-widest border-2 ${daysLeft > 0 ? 'border-red-500 text-red-500' : 'border-gray-200 text-gray-300'}`}>
-                  {daysLeft > 0 ? `${daysLeft} DAYS LEFT` : 'CLOSED'}
+                <div className="space-y-2">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8]">Content Deadline</h3>
+                  <p className="text-[16px] font-bold text-[#1E293B]">{formatDate(opportunity.contentDeadline)}</p>
                 </div>
               </div>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest">
-                  <Calendar size={14} /> Deadline: {new Date(opportunity.application_deadline).toLocaleDateString()}
-                </div>
-                <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-gray-400">
-                  <Clock size={14} /> Content by: {new Date(opportunity.content_deadline).toLocaleDateString()}
-                </div>
+              <div className="h-[1px] bg-[#E2E8F0]" />
+
+              {/* Quick Facts */}
+              <div className="space-y-3">
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#94A3B8]">Quick Specifications</h3>
+                <ul className="space-y-2 text-xs font-bold text-[#475569] uppercase tracking-wider">
+                  <li>• RAW FILES {opportunity.extraRequirements.rawFilesNeeded ? 'REQUIRED' : 'NOT NEEDED'}</li>
+                  <li>• {opportunity.extraRequirements.revisions} REVISION ROUNDS</li>
+                  <li>• {opportunity.extraRequirements.usageRights.join(' + ')} USAGE</li>
+                </ul>
               </div>
 
               <button 
                 onClick={() => setShowApplyDrawer(true)}
-                disabled={daysLeft <= 0}
-                className="w-full py-5 bg-black text-white font-black uppercase tracking-[0.2em] border-2 border-black hover:bg-[#0044ff] hover:border-[#0044ff] transition-all disabled:opacity-50"
+                className="w-full py-4 bg-[#0F172A] text-white text-[14px] font-bold uppercase tracking-widest hover:bg-[#1E293B] transition-all rounded-sm"
               >
-                APPLY NOW
+                APPLY FOR BRIEF
               </button>
-
-              <p className="text-[10px] font-bold text-center text-gray-400 uppercase tracking-widest mt-4">
-                Payments secured via Driplens Escrow
-              </p>
-            </div>
-
-            {/* Extra Info */}
-            <div className="p-8 border border-gray-100 bg-gray-50/50 space-y-6">
-              <h4 className="text-[10px] font-black uppercase tracking-widest">Specifications</h4>
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
-                  <CheckCircle2 size={14} className={opportunity.raw_files_needed ? 'text-black' : 'text-gray-200'} />
-                  Raw Files Needed
-                </div>
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
-                  <CheckCircle2 size={14} className={opportunity.usage_rights ? 'text-black' : 'text-gray-200'} />
-                  Usage Rights Required
-                </div>
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
-                  <AlertCircle size={14} className="text-black" />
-                  {opportunity.num_revisions} Revision Rounds
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Apply Drawer Overlay */}
+      {/* Apply Drawer */}
       <AnimatePresence>
         {showApplyDrawer && (
           <>
@@ -263,93 +220,71 @@ export default function OpportunityDetailPage() {
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
               onClick={() => setShowApplyDrawer(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
             />
             <motion.div 
-              initial={{ y: '100%' }} 
-              animate={{ y: 0 }} 
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed bottom-0 left-0 w-full md:w-[600px] md:left-1/2 md:-translate-x-1/2 bg-white z-[101] border-t-4 border-black p-8 md:p-12 h-[90vh] overflow-y-auto"
+              initial={{ x: '100%' }} 
+              animate={{ x: 0 }} 
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="fixed top-0 right-0 h-full w-full md:w-[500px] bg-white z-[101] shadow-2xl p-12 overflow-y-auto"
             >
-              <div className="flex justify-between items-center mb-12">
-                <h2 className="text-3xl font-black uppercase tracking-tighter">Submit Application</h2>
-                <button onClick={() => setShowApplyDrawer(false)} className="p-2 border-2 border-gray-100 hover:border-black transition-all">
-                  <X size={20} />
+              <div className="flex justify-between items-center mb-16">
+                <h2 className="text-3xl font-black uppercase tracking-tighter">Apply</h2>
+                <button onClick={() => setShowApplyDrawer(false)} className="text-xs font-black uppercase tracking-widest hover:underline">
+                  CLOSE
                 </button>
               </div>
 
               {applySuccess ? (
-                <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
-                  <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center text-white">
-                    <CheckCircle2 size={40} />
-                  </div>
-                  <h3 className="text-2xl font-black uppercase tracking-tighter">Application Sent!</h3>
-                  <p className="text-sm font-bold uppercase tracking-widest text-gray-400">The brand will review your profile and get back to you.</p>
+                <div className="h-[60vh] flex flex-col items-center justify-center text-center space-y-6">
+                  <div className="text-6xl mb-4">✨</div>
+                  <h3 className="text-2xl font-black uppercase tracking-tighter">Application Sent</h3>
+                  <p className="text-sm font-bold uppercase tracking-widest text-[#94A3B8] leading-relaxed">
+                    Your application has been submitted. The brand will review your profile shortly.
+                  </p>
                 </div>
               ) : (
-                <form onSubmit={handleApply} className="space-y-8">
-                  <div className="p-6 bg-gray-50 border-2 border-black">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Portfolio Pull</p>
-                    <p className="text-xs font-bold uppercase tracking-widest">Your Driplens profile will be automatically attached to this application.</p>
-                  </div>
-
+                <form onSubmit={handleApply} className="space-y-10">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Previous Work (Reel Links)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Introduction Pitch</label>
                     <textarea 
-                      placeholder="Paste 2-3 Instagram Reel or YouTube links (comma separated)"
-                      className="w-full p-4 border-2 border-black font-bold outline-none focus:border-[#0044ff] resize-none"
-                      rows={3}
-                      value={appData.reel_links}
-                      onChange={(e) => setAppData(p => ({ ...p, reel_links: e.target.value }))}
                       required
+                      placeholder="Why are you the perfect fit?"
+                      value={pitch}
+                      onChange={(e) => setPitch(e.target.value)}
+                      className="w-full p-6 border border-[#E2E8F0] font-medium outline-none focus:border-[#0F172A] resize-none h-40"
                     />
                   </div>
-
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Pitch (Max 200 chars)</label>
-                    <textarea 
-                      placeholder="Why are you the perfect fit for this campaign?"
-                      maxLength={200}
-                      className="w-full p-4 border-2 border-black font-bold outline-none focus:border-[#0044ff] resize-none"
-                      rows={4}
-                      value={appData.intro_message}
-                      onChange={(e) => setAppData(p => ({ ...p, intro_message: e.target.value }))}
-                      required
-                    />
-                    <p className="text-[10px] text-right font-bold text-gray-400">{appData.intro_message.length}/200</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Expected Price (INR)</label>
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Relevant Work Link</label>
                     <input 
-                      type="number"
-                      placeholder="Enter your fee"
-                      className="w-full p-4 border-2 border-black font-bold text-xl outline-none focus:border-[#0044ff]"
-                      value={appData.expected_price}
-                      onChange={(e) => setAppData(p => ({ ...p, expected_price: e.target.value }))}
                       required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Intro Video (Optional)</label>
-                    <input 
                       type="url"
-                      placeholder="Paste a 20-sec Loom/Google Drive link"
-                      className="w-full p-4 border-2 border-black font-bold outline-none focus:border-[#0044ff]"
-                      value={appData.intro_video_url}
-                      onChange={(e) => setAppData(p => ({ ...p, intro_video_url: e.target.value }))}
+                      placeholder="Portfolio or Reel link"
+                      value={workLink}
+                      onChange={(e) => setWorkLink(e.target.value)}
+                      className="w-full p-6 border border-[#E2E8F0] font-medium outline-none focus:border-[#0F172A]"
                     />
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">A short intro video increases hiring chances by 40%.</p>
                   </div>
-
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-[#94A3B8]">Your Bid Amount (₹)</label>
+                    <input 
+                      required
+                      type="number"
+                      min="1"
+                      placeholder="Enter your bid amount"
+                      value={bidAmount}
+                      onChange={(e) => setBidAmount(e.target.value)}
+                      className={`w-full p-6 border ${bidError ? 'border-red-500' : 'border-[#E2E8F0]'} font-medium outline-none focus:border-[#0F172A]`}
+                    />
+                    {bidError && <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest">{bidError}</p>}
+                  </div>
                   <button 
-                    type="submit" 
-                    disabled={applyLoading}
-                    className="w-full py-5 bg-[#0044ff] text-white font-black uppercase tracking-[0.2em] border-2 border-[#0044ff] hover:bg-black hover:border-black transition-all disabled:opacity-50"
+                    type="submit"
+                    className="w-full py-6 bg-[#0F172A] text-white font-bold uppercase tracking-widest hover:bg-black transition-all"
                   >
-                    {applyLoading ? 'SUBMITTING...' : 'CONFIRM APPLICATION'}
+                    SUBMIT APPLICATION
                   </button>
                 </form>
               )}

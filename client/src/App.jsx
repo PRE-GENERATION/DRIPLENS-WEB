@@ -32,6 +32,9 @@ import BrandVerificationPage from './pages/BrandVerificationPage';
 import CreateOpportunityPage from './pages/CreateOpportunityPage';
 import OpportunitiesPage from './pages/OpportunitiesPage';
 import OpportunityDetailPage from './pages/OpportunityDetailPage';
+import AppliedCampaignsPage from './pages/AppliedCampaignsPage';
+import DashboardPage from './pages/DashboardPage';
+import EarningsPage from './pages/EarningsPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Footer Pages - Product
@@ -73,10 +76,11 @@ const AppContent = () => {
   const isDriplens = location.pathname.startsWith('/driplens');
   const isDM = location.pathname.startsWith('/dm');
   const isAuth = location.pathname.startsWith('/auth');
+  const hasSidebar = ['/dashboard', '/earnings'].includes(location.pathname);
 
   return (
     <div className={isDriplens ? "bg-[#050508] min-h-screen text-white" : "min-h-screen flex flex-col bg-[var(--color-brand-bg)] text-[var(--color-brand-body)]"}>
-      {!isDriplens && !isAuth && <Navbar />}
+      {!isDriplens && !isAuth && !hasSidebar && <Navbar />}
       <main className="flex-grow">
         <Routes>
           {/* Driplens Landing */}
@@ -138,8 +142,17 @@ const AppContent = () => {
           <Route path="/upload" element={
             <ProtectedRoute requiredRole="creator"><UploadPage /></ProtectedRoute>
           } />
+          <Route path="/dashboard" element={
+            <ProtectedRoute requiredRole="creator"><DashboardPage /></ProtectedRoute>
+          } />
           <Route path="/dashboard/creator" element={
             <ProtectedRoute requiredRole="creator"><CreatorDashboard /></ProtectedRoute>
+          } />
+          <Route path="/applied" element={
+            <ProtectedRoute requiredRole="creator"><AppliedCampaignsPage /></ProtectedRoute>
+          } />
+          <Route path="/earnings" element={
+            <ProtectedRoute requiredRole="creator"><EarningsPage /></ProtectedRoute>
           } />
           <Route path="/dashboard/brand" element={
             <ProtectedRoute requiredRole="brand"><BrandDashboard /></ProtectedRoute>
