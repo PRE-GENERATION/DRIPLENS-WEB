@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { validate } from '../../middleware/validate.js';
-import { requireAuth, requireRole } from '../../middleware/auth.js';
+import { requireAuth } from '../../middleware/auth.js';
 import { apiLimiter } from '../../middleware/rateLimiter.js';
 import { listCreatorsSchema, updateCreatorProfileSchema } from '../../schemas/creatorSchemas.js';
 import * as creatorService from '../../services/creatorService.js';

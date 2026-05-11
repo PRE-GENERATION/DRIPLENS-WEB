@@ -9,7 +9,7 @@ const errorResponse = (res, statusCode, code, message) =>
     error: { code, message }
   });
 
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res, _next) => {
   // Log every error with context
   const logEntry = JSON.stringify({
     timestamp: new Date().toISOString(),
@@ -23,7 +23,7 @@ export const errorHandler = (err, req, res, next) => {
   
   try {
     fs.appendFileSync('error.log', logEntry);
-  } catch (e) {
+  } catch (_e) {
     // ignore
   }
 
