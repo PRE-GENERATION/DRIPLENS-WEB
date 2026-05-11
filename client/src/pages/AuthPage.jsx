@@ -256,7 +256,8 @@ export default function AuthPage() {
       if (user.role === 'creator' && !user.onboarding_complete) {
         navigate('/onboarding/step-1', { replace: true });
       } else {
-        const from = location.state?.from?.pathname || `/dashboard/${user.role}`;
+        const dashboardPath = user.role === 'creator' ? '/dashboard' : `/dashboard/${user.role}`;
+        const from = location.state?.from?.pathname || dashboardPath;
         navigate(from, { replace: true });
       }
     }
@@ -323,7 +324,8 @@ export default function AuthPage() {
         if (userData.role === 'creator' && !userData.onboarding_complete) {
           navigate('/onboarding/step-1', { replace: true });
         } else {
-          navigate(`/dashboard/${userData.role}`, { replace: true });
+          const dashboardPath = userData.role === 'creator' ? '/dashboard' : `/dashboard/${userData.role}`;
+          navigate(dashboardPath, { replace: true });
         }
       }
     } catch (err) {
@@ -351,7 +353,7 @@ export default function AuthPage() {
         <div className="absolute inset-0 opacity-10 pointer-events-none" 
              style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         
-        <Link to="/" className="text-2xl font-black tracking-tighter relative z-10">DRIPLENS</Link>
+        <Link to="/" className="text-2xl font-black tracking-tighter relative z-10 text-white">DRIPLENS</Link>
         
         <div className="relative z-10">
           <motion.div
@@ -359,12 +361,12 @@ export default function AuthPage() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-6xl md:text-8xl font-black leading-none mb-4">
+            <h1 className="text-6xl md:text-8xl font-black leading-none mb-4 text-white">
               THE<br />
               <span className="text-transparent" style={{ WebkitTextStroke: '2px white' }}>ELITE</span><br />
               CLUB
             </h1>
-            <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-60">Professional Creator Network</p>
+            <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-60 text-white">Professional Creator Network</p>
           </motion.div>
         </div>
 

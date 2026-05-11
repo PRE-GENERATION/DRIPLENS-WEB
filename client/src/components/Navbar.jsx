@@ -41,11 +41,7 @@ export default function Navbar() {
   );
 
   // Condition 1: Landing Page Links
-  const publicLinks = [
-    { to: '/', label: 'Home' },
-    { to: '/creators', label: 'For Creators' },
-    { to: '/brands', label: 'For Brands' },
-  ];
+  const publicLinks = [];
 
   // Condition 2: Brand Links
   const brandLinks = [

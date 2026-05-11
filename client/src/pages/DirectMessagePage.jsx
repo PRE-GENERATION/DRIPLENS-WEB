@@ -21,7 +21,9 @@ export default function DirectMessagePage() {
     { id: 3, text: "Hi! Thank you so much. Yes, I'm available. What kind of commercial shoot is it?", sender: 'them', time: '10:45 AM', status: 'read' },
   ]);
   const [newMessage, setNewMessage] = useState("");
+  const messageContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     if (!id) return;
@@ -40,7 +42,10 @@ export default function DirectMessagePage() {
   }, [id]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messageContainerRef.current) {
+      // Scroll to bottom of messages container, NOT window
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+    }
   };
 
   useEffect(() => {
@@ -191,7 +196,11 @@ export default function DirectMessagePage() {
         </header>
 
         {/* Chat Messages */}
-        <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-6 custom-scrollbar">
+        <div 
+          ref={messageContainerRef}
+          className="flex-1 overflow-y-auto p-8 md:p-12 space-y-6 chat-message-container custom-scrollbar"
+          style={{ height: 'calc(100vh - 160px)' }}
+        >
           {messages.map((msg) => (
             <motion.div 
               key={msg.id}
@@ -255,6 +264,17 @@ export default function DirectMessagePage() {
         </div>
 
       </div>
+      <style>{`
+        .chat-message-container {
+          height: calc(100vh - 160px);
+          overflow-y: auto;
+          scroll-behavior: auto;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 2px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #D1D5DB; }
+      `}</style>
     </div>
   );
 }

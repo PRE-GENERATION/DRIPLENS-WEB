@@ -3,52 +3,106 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
-  Zap, 
   LayoutDashboard, 
   Briefcase, 
-  CreditCard, 
-  BarChart3, 
-  MessageSquare,
-  BadgeCheck,
-  Search,
-  CheckCircle2,
+  MessageSquare, 
+  Users, 
+  Settings, 
+  HelpCircle, 
+  Bell, 
+  Search, 
+  Filter, 
+  Calendar,
+  ArrowUpRight,
+  TrendingUp,
+  UserPlus,
+  PenLine,
+  MoreVertical,
+  LogOut,
+  ChevronRight,
   Clock,
-  IndianRupee,
-  MapPin,
-  Tag,
-  Upload,
-  ArrowRight
+  Mail,
+  Zap,
+  BarChart3
 } from 'lucide-react';
-import { api } from '../lib/api';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area 
+} from 'recharts';
+import { format, subMonths, startOfMonth, endOfMonth, subYears } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
-import { useSocket } from '../context/SocketContext';
+import { api } from '../lib/api';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mock Data
+// ─────────────────────────────────────────────────────────────────────────────
+
+const mrrData = {
+  '12 months': [
+    { month: 'Jan', value: 12000 }, { month: 'Feb', value: 13500 }, { month: 'Mar', value: 12800 },
+    { month: 'Apr', value: 15000 }, { month: 'May', value: 16200 }, { month: 'Jun', value: 15800 },
+    { month: 'Jul', value: 17500 }, { month: 'Aug', value: 18200 }, { month: 'Sep', value: 17900 },
+    { month: 'Oct', value: 19500 }, { month: 'Nov', value: 20800 }, { month: 'Dec', value: 18880 },
+  ],
+  '30 days': [
+    { month: 'Week 1', value: 4200 }, { month: 'Week 2', value: 4800 }, { month: 'Week 3', value: 4500 }, { month: 'Week 4', value: 5380 },
+  ],
+  '7 days': [
+    { month: 'Mon', value: 600 }, { month: 'Tue', value: 800 }, { month: 'Wed', value: 750 },
+    { month: 'Thu', value: 900 }, { month: 'Fri', value: 1100 }, { month: 'Sat', value: 1050 }, { month: 'Sun', value: 1200 },
+  ],
+  '24 hours': [
+    { month: '00:00', value: 50 }, { month: '04:00', value: 30 }, { month: '08:00', value: 120 },
+    { month: '12:00', value: 250 }, { month: '16:00', value: 180 }, { month: '20:00', value: 320 },
+  ]
+};
+
+const topMembers = [
+  { id: 1, name: 'Alex Rivera', role: 'Premium Member', date: '12 Jan 2024', status: 'online', avatar: 'https://i.pravatar.cc/150?u=alex' },
+  { id: 2, name: 'Sarah Chen', role: 'Gold Member', date: '05 Mar 2024', status: 'online', avatar: 'https://i.pravatar.cc/150?u=sarah' },
+  { id: 3, name: 'Marcus Bell', role: 'New Member', date: '28 Apr 2024', status: 'offline', avatar: 'https://i.pravatar.cc/150?u=marcus' },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Components
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
+const SidebarItem = ({ icon: Icon, label, active, onClick, badge }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center gap-4 p-4 text-xs font-bold uppercase tracking-widest transition-all ${
+    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
       active 
-        ? 'border-l-[3px] border-[#0044ff] text-black bg-gray-50/50' 
-        : 'border-l-[3px] border-transparent text-gray-400 hover:text-black hover:bg-gray-50'
+        ? 'bg-[#0540F2] text-white shadow-lg shadow-blue-200' 
+        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
     }`}
   >
-    <Icon size={18} />
-    <span className="flex-1 text-left">{label}</span>
+    <Icon size={20} className={active ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'} />
+    <span className="flex-1 text-left font-medium text-sm">{label}</span>
+    {badge && (
+      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+        active ? 'bg-white/20 text-white' : 'bg-red-500 text-white'
+      }`}>
+        {badge}
+      </span>
+    )}
   </button>
 );
 
-const SectionHeader = ({ title, subtitle, children }) => (
-  <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
-    <div>
-      <h2 className="text-4xl font-black tracking-tighter uppercase mb-2">{title}</h2>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{subtitle}</p>
-    </div>
-    <div className="flex gap-2">
-      {children}
+const StatMini = ({ label, value, change, isPositive }) => (
+  <div className="flex flex-col gap-1">
+    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
+    <div className="flex items-end gap-2">
+      <h4 className="text-xl font-bold text-gray-900">{value}</h4>
+      <span className={`text-[10px] font-bold flex items-center mb-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+        {isPositive ? '+' : '-'}{change}%
+      </span>
     </div>
   </div>
 );
@@ -58,339 +112,324 @@ const SectionHeader = ({ title, subtitle, children }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CreatorDashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const socket = useSocket();
-  const [activeTab, setActiveTab] = useState('opportunities');
-  const [loading, setLoading] = useState(true);
-  
-  // Data State
-  const [opportunities, setOpportunities] = useState([]);
-  const [applications, setApplications] = useState([]);
-  const [payments, setPayments] = useState([]);
-  const [portfolio, setPortfolio] = useState([]);
-  const [stats, setStats] = useState({
-    earnings: 0,
-    completed: 0,
-    rating: 0,
-    repeatClients: 0
-  });
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [timeframe, setTimeframe] = useState('12 months');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Redirect to onboarding if profile not yet completed
+  // Keyboard shortcut for search
   useEffect(() => {
-    if (user && !user.onboarding_complete) {
-      navigate('/onboarding/step-1', { replace: true });
-    }
-  }, [user, navigate]);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [activeTab]);
-
-  const fetchDashboardData = async () => {
-    setLoading(true);
-    try {
-      if (activeTab === 'opportunities') {
-        const res = await api.get('/opportunities');
-        setOpportunities(res.data);
-      } else if (activeTab === 'applied') {
-        const res = await api.get('/opportunities/my/applications');
-        setApplications(res.data);
-      } else if (activeTab === 'payments') {
-        const res = await api.get('/payments');
-        setPayments(res.data);
-      } else if (activeTab === 'portfolio') {
-        // Fetch uploaded work
-        const res = await api.get('/creators/portfolio');
-        setPortfolio(res.data);
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('sidebar-search')?.focus();
       }
-      // Mock stats
-      setStats({
-        earnings: 125000,
-        completed: 14,
-        rating: 4.9,
-        repeatClients: 6
-      });
-    } catch (err) {
-      console.error('Dashboard fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Sections
-  // ───────────────────────────────────────────────────────────────────────────
+  const navItems = [
+    { icon: LayoutDashboard, label: 'Dashboard' },
+    { icon: Briefcase, label: 'Projects' },
+    { icon: Clock, label: 'Tasks', badge: '3' },
+    { icon: BarChart3, label: 'Reporting' },
+    { icon: Users, label: 'Users' },
+  ];
 
-  const OpportunitiesFeed = () => (
-    <div className="space-y-1">
-      <SectionHeader title="Live Briefs" subtitle="Opportunities matching your profile" />
-      <div className="border-t border-gray-100">
-        {opportunities.length === 0 ? (
-          <div className="py-20 text-center border-b border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No active briefs found</p>
-          </div>
-        ) : (
-          opportunities.map(opp => (
-            <Link 
-              to={`/opportunities/${opp.id}`} 
-              key={opp.id} 
-              className="group flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all"
-            >
-              <div className="flex gap-6 items-center">
-                <div className="w-12 h-12 border-2 border-black flex items-center justify-center shrink-0">
-                  <img src={opp.brand?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold tracking-tight mb-1 group-hover:text-[#0044ff] transition-colors">{opp.title}</h3>
-                  <div className="flex gap-4">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#0044ff]">{opp.brand?.username}</span>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{opp.niche?.join(', ')}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-12 mt-4 md:mt-0">
-                <div className="text-right">
-                  <p className="text-xl font-black">₹{Number(opp.budget_amount || 0).toLocaleString()}</p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{opp.budget_type}</p>
-                </div>
-                <div className="p-4 border-2 border-black group-hover:bg-black group-hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                  Apply <ArrowRight size={14} />
-                </div>
-              </div>
-            </Link>
-          ))
-        )}
-      </div>
-    </div>
-  );
-
-  const AppliedCampaigns = () => (
-    <div className="space-y-1">
-      <SectionHeader title="Applied Campaigns" subtitle="Track your proposal status" />
-      <div className="border-t border-gray-100">
-        {applications.length === 0 ? (
-          <div className="py-20 text-center border-b border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">You haven't applied to any campaigns yet</p>
-          </div>
-        ) : (
-          applications.map(app => (
-            <div key={app.id} className="flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all">
-              <div className="flex gap-6 items-center">
-                <div className={`w-12 h-12 border-2 flex items-center justify-center shrink-0 ${
-                  app.status === 'hired' ? 'bg-green-500 border-green-500 text-white' : 
-                  app.status === 'shortlisted' ? 'bg-[#0044ff] border-[#0044ff] text-white' : 'border-black'
-                }`}>
-                  {app.status === 'hired' ? <CheckCircle2 size={20} /> : <Clock size={20} />}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold tracking-tight">{app.opportunity?.title}</h3>
-                  <div className="flex items-center gap-3 mt-1">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client: {app.opportunity?.brand?.username}</p>
-                    {app.status === 'hired' && (
-                      <span className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
-                        <BadgeCheck size={10} /> Payment Secured
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-12 mt-4 md:mt-0">
-                <div className="text-right">
-                  <p className="text-xl font-black">₹{Number(app.expected_price || 0).toLocaleString()}</p>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Expected</p>
-                </div>
-                <div className={`px-4 py-2 border-2 text-[10px] font-black uppercase tracking-[0.2em] min-w-[120px] text-center ${
-                  app.status === 'hired' ? 'bg-green-500 border-green-500 text-white' : 
-                  app.status === 'shortlisted' ? 'bg-[#0044ff] border-[#0044ff] text-white' :
-                  app.status === 'rejected' ? 'bg-red-500 border-red-500 text-white' : 'border-black'
-                }`}>
-                  {app.status.toUpperCase()}
-                </div>
-                {app.status === 'shortlisted' && (
-                  <button onClick={() => navigate(`/dm/${app.opportunity?.brand_id}`)} className="p-3 border-2 border-black hover:bg-black hover:text-white transition-all">
-                    <MessageSquare size={16} />
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-
-  const PaymentsSection = () => (
-    <div className="space-y-8">
-      <SectionHeader title="Payments" subtitle="Earnings & UPI Settings" />
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="p-12 border-2 border-black bg-black text-white">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-60">Total Earnings</p>
-          <h3 className="text-6xl font-black tracking-tighter mb-8">₹{stats.earnings.toLocaleString()}</h3>
-          <button className="text-[10px] font-black uppercase tracking-widest underline underline-offset-4 hover:text-[#0044ff]">Withdraw to Bank</button>
-        </div>
-        
-        <div className="p-12 border-2 border-black">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-8">Connected UPI ID</p>
-          <div className="flex items-center justify-between p-4 border-2 border-gray-100 mb-8">
-            <span className="font-bold">annanya@okicici</span>
-            <button className="text-[10px] font-black uppercase tracking-widest text-[#0044ff]">Edit</button>
-          </div>
-          <p className="text-xs text-gray-400 leading-relaxed">Payments are instantly released to your UPI ID once the brand approves your content.</p>
-        </div>
-      </div>
-
-      <div className="mt-12">
-        <h4 className="text-xs font-black uppercase tracking-widest mb-6">Recent Transactions</h4>
-        <div className="border-t-2 border-black">
-          {[1,2,3].map(i => (
-            <div key={i} className="flex justify-between items-center py-6 border-b border-gray-100">
-              <div>
-                <p className="font-bold text-sm">Campaign Payout: Nike Air Max</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">12 May 2026</p>
-              </div>
-              <div className="text-right">
-                <p className="font-black text-green-600">+ ₹15,000</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Completed</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const PortfolioSection = () => (
-    <div>
-      <SectionHeader title="Portfolio" subtitle="Your uploaded content & work">
-        <button onClick={() => navigate('/upload')} className="bg-black text-white px-6 py-3 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-          <Upload size={14} /> Upload New
-        </button>
-      </SectionHeader>
-      
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {portfolio.length === 0 ? (
-          [1,2,3,4].map(i => (
-            <div key={i} className="aspect-square bg-gray-50 border-2 border-gray-100 flex items-center justify-center text-gray-300">
-              <Box size={32} />
-            </div>
-          ))
-        ) : (
-          portfolio.map(work => (
-            <div key={work.id} className="aspect-square border-2 border-black overflow-hidden group relative">
-              <img src={work.url} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                <p className="text-[10px] font-black uppercase tracking-widest text-white">{work.title}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-
-  const Analytics = () => (
-    <div>
-      <SectionHeader title="Analytics" subtitle="Campaign performance & growth" />
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
-        <div className="p-12 border-2 border-black">
-          <p className="text-4xl font-black tracking-tighter">₹{(stats.earnings/1000).toFixed(1)}K</p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Total Earnings</p>
-        </div>
-        <div className="p-12 border-2 border-black">
-          <p className="text-4xl font-black tracking-tighter">{stats.completed}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Campaigns Done</p>
-        </div>
-        <div className="p-12 border-2 border-black">
-          <p className="text-4xl font-black tracking-tighter">{stats.rating}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Average Rating</p>
-        </div>
-        <div className="p-12 border-2 border-black">
-          <p className="text-4xl font-black tracking-tighter">{stats.repeatClients}</p>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Repeat Clients</p>
-        </div>
-      </div>
-    </div>
-  );
+  const bottomNavItems = [
+    { icon: HelpCircle, label: 'Support' },
+    { icon: Settings, label: 'Settings' },
+  ];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row">
+    <div className="flex min-h-screen bg-[#F8F9FA] font-inter">
       <Helmet>
-        <title>Creator Dashboard — Driplens</title>
+        <title>Dashboard | DRIPLENS</title>
       </Helmet>
 
-      {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-72 border-r-2 border-black h-screen sticky top-0 bg-white">
-        <div className="p-8 border-b-2 border-black flex items-center justify-between">
-          <Link to="/" className="text-2xl font-black tracking-tighter">DRIPLENS</Link>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-[8px] font-black uppercase tracking-widest">LIVE</span>
+      {/* Sidebar */}
+      <aside className="w-72 bg-white border-r border-gray-100 flex flex-col sticky top-0 h-screen z-40">
+        <div className="p-6">
+          <Link to="/" className="text-2xl font-black tracking-tighter text-[#0540F2]">DRIPLENS</Link>
+        </div>
+
+        {/* Search */}
+        <div className="px-6 mb-6">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0540F2] transition-colors" size={16} />
+            <input 
+              id="sidebar-search"
+              type="text" 
+              placeholder="Search..." 
+              className="w-full bg-gray-50 border border-transparent focus:border-[#0540F2] focus:bg-white rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none transition-all"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-medium text-gray-400 bg-white border border-gray-200 rounded-md">⌘K</kbd>
+            </div>
           </div>
         </div>
 
-        <nav className="flex-1 py-8">
-          <SidebarItem icon={LayoutDashboard} label="Opportunities" active={activeTab === 'opportunities'} onClick={() => setActiveTab('opportunities')} />
-          <SidebarItem icon={Briefcase} label="Applied Campaigns" active={activeTab === 'applied'} onClick={() => setActiveTab('applied')} />
-          <SidebarItem icon={MessageSquare} label="Messages" active={activeTab === 'messages'} onClick={() => navigate('/messages')} />
-          <SidebarItem icon={CreditCard} label="Payments" active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} />
-          <SidebarItem icon={BarChart3} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-          <SidebarItem icon={Upload} label="Portfolio" active={activeTab === 'portfolio'} onClick={() => setActiveTab('portfolio')} />
+        {/* Main Nav */}
+        <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
+          {navItems.map((item) => (
+            <SidebarItem 
+              key={item.label} 
+              {...item} 
+              active={activeTab === item.label}
+              onClick={() => {
+                setActiveTab(item.label);
+                if (item.label === 'Dashboard') navigate('/dashboard');
+                // other routes...
+              }}
+            />
+          ))}
         </nav>
 
-        <div className="p-8 border-t-2 border-black">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-black overflow-hidden shrink-0">
-              <img src={user?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-tighter truncate">{user?.display_name || user?.username}</p>
-              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest truncate">{user?.role}</p>
+        {/* Bottom Nav */}
+        <div className="px-4 py-6 border-t border-gray-50 space-y-1">
+          {bottomNavItems.map((item) => (
+            <SidebarItem 
+              key={item.label} 
+              {...item} 
+              active={activeTab === item.label}
+              onClick={() => setActiveTab(item.label)}
+            />
+          ))}
+          
+          {/* New Features Card */}
+          <div className="mt-6 p-4 bg-blue-50 rounded-2xl relative overflow-hidden group">
+            <div className="absolute -right-2 -top-2 w-16 h-16 bg-blue-100/50 rounded-full blur-2xl group-hover:bg-blue-200/50 transition-colors" />
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 bg-[#0540F2] rounded-lg text-white">
+                  <Zap size={14} fill="currentColor" />
+                </div>
+                <span className="text-xs font-bold text-[#0540F2]">New features</span>
+              </div>
+              <p className="text-[11px] text-blue-800 leading-relaxed mb-3">
+                Check out the latest updates to your workspace and tools.
+              </p>
+              <button className="text-[11px] font-bold text-[#0540F2] flex items-center gap-1 hover:underline">
+                Dismiss <ChevronRight size={12} />
+              </button>
             </div>
           </div>
+
+          <button 
+            onClick={logout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all mt-4 group"
+          >
+            <LogOut size={20} className="text-gray-400 group-hover:text-red-600" />
+            <span className="text-sm font-medium">Logout</span>
+          </button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-8 md:p-16">
-        <div className="max-w-5xl mx-auto">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {activeTab === 'opportunities' && <OpportunitiesFeed />}
-              {activeTab === 'applied' && <AppliedCampaigns />}
-              {activeTab === 'payments' && <PaymentsSection />}
-              {activeTab === 'analytics' && <Analytics />}
-              {activeTab === 'portfolio' && <PortfolioSection />}
-            </motion.div>
-          </AnimatePresence>
+      <main className="flex-1 p-8 overflow-x-hidden">
+        {/* Header */}
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+          <div>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-1">Dashboard</h1>
+            <p className="text-sm text-gray-500 font-medium">Welcome back, {user?.display_name || user?.username || 'Creator'}</p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Timeframe Selectors */}
+            <div className="flex bg-white p-1 rounded-xl border border-gray-100 shadow-sm">
+              {['12 months', '30 days', '7 days', '24 hours'].map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTimeframe(t)}
+                  className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                    timeframe === t 
+                      ? 'bg-[#0540F2] text-white shadow-md' 
+                      : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            {/* Date Range */}
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm text-xs font-bold text-gray-700">
+              <Calendar size={14} className="text-gray-400" />
+              <span>
+                {format(subYears(new Date(), 1), 'dd MMM yyyy')} – {format(new Date(), 'dd MMM yyyy')}
+              </span>
+            </div>
+
+            {/* Filter */}
+            <button className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm text-xs font-bold text-gray-700 hover:bg-gray-50 transition-all">
+              <Filter size={14} className="text-gray-400" />
+              <span>Filters</span>
+            </button>
+          </div>
+        </header>
+
+        {/* MRR Section */}
+        <section className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-50 mb-8 overflow-hidden relative">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-12">
+            <div>
+              <div className="flex items-start justify-between mb-8">
+                <div>
+                  <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.2em] mb-2">Monthly Recurring Revenue</p>
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-5xl font-black text-gray-900 tracking-tighter">$18,880</h2>
+                    <div className="flex items-center gap-1 bg-green-50 text-green-600 px-2 py-1 rounded-lg text-xs font-bold">
+                      <TrendingUp size={14} />
+                      <span>7.4%</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#0540F2]" />
+                    <span className="text-[10px] font-bold text-gray-500 uppercase">Current Period</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chart */}
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={mrrData[timeframe] || mrrData['12 months']}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0540F2" stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor="#0540F2" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                    <XAxis 
+                      dataKey="month" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 600 }}
+                      dy={10}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#94A3B8', fontSize: 10, fontWeight: 600 }}
+                      dx={-10}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#fff', 
+                        border: 'none', 
+                        borderRadius: '16px', 
+                        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)',
+                        padding: '12px'
+                      }}
+                      itemStyle={{ color: '#0540F2', fontWeight: 800, fontSize: '14px' }}
+                      labelStyle={{ color: '#94A3B8', fontWeight: 600, fontSize: '10px', textTransform: 'uppercase', marginBottom: '4px' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#0540F2" 
+                      strokeWidth={4} 
+                      fillOpacity={1} 
+                      fill="url(#colorValue)" 
+                      animationDuration={2000}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Vertical Stats */}
+            <div className="flex flex-col justify-center gap-10 border-l border-gray-50 pl-12">
+              <StatMini label="Total Members" value="2,420" change="12.5" isPositive={true} />
+              <StatMini label="Paid Members" value="1,148" change="8.2" isPositive={true} />
+              <StatMini label="Email Open Rate" value="64.2%" change="2.4" isPositive={true} />
+            </div>
+          </div>
+        </section>
+
+        {/* Bottom Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
+          {/* Content Creation Cards */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold text-gray-900">Start creating content</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <button className="group text-left bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-1 transition-all duration-300">
+                <div className="w-14 h-14 bg-blue-50 text-[#0540F2] rounded-2xl flex items-center justify-center mb-6 group-hover:bg-[#0540F2] group-hover:text-white transition-colors">
+                  <UserPlus size={28} />
+                </div>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">Create your first member</h4>
+                <p className="text-sm text-gray-500 leading-relaxed font-medium">Add yourself or import from CSV to get started.</p>
+                <div className="mt-6 flex items-center gap-2 text-[#0540F2] text-xs font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+                  Get Started <ChevronRight size={14} />
+                </div>
+              </button>
+
+              <button className="group text-left bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl hover:shadow-blue-500/5 hover:-translate-y-1 transition-all duration-300">
+                <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                  <PenLine size={28} />
+                </div>
+                <h4 className="text-lg font-bold text-gray-900 mb-2">Create a new post</h4>
+                <p className="text-sm text-gray-500 leading-relaxed font-medium">Dive into the editor and start creating your story.</p>
+                <div className="mt-6 flex items-center gap-2 text-purple-600 text-xs font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+                  Open Editor <ChevronRight size={14} />
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Top Members */}
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-gray-50">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-xl font-bold text-gray-900">Top Members</h3>
+              <button className="text-[10px] font-black uppercase tracking-widest text-[#0540F2] hover:underline">View All</button>
+            </div>
+            <div className="space-y-6">
+              {topMembers.map((member) => (
+                <div key={member.id} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-white shadow-sm group-hover:scale-110 transition-transform">
+                        <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
+                      </div>
+                      {member.status === 'online' && (
+                        <div className="absolute -right-1 -bottom-1 w-4 h-4 bg-green-500 border-4 border-white rounded-full" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-gray-900 group-hover:text-[#0540F2] transition-colors">{member.name}</h4>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Member since {member.date}</p>
+                    </div>
+                  </div>
+                  <button className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all">
+                    <MoreVertical size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-8 pt-8 border-t border-gray-50">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#0540F2] shadow-sm">
+                    <Mail size={18} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Invite link</p>
+                    <p className="text-xs font-bold text-gray-900">driplens.com/j/premium</p>
+                  </div>
+                </div>
+                <button className="text-[10px] font-black uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg shadow-sm hover:shadow-md transition-all">Copy</button>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
-
-      {/* Bottom Nav - Mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t-2 border-black flex justify-around p-4 z-50">
-        <button onClick={() => setActiveTab('opportunities')} className={activeTab === 'opportunities' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <LayoutDashboard size={24} />
-        </button>
-        <button onClick={() => setActiveTab('applied')} className={activeTab === 'applied' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <Briefcase size={24} />
-        </button>
-        <button onClick={() => navigate('/messages')} className="text-gray-400">
-          <MessageSquare size={24} />
-        </button>
-        <button onClick={() => setActiveTab('payments')} className={activeTab === 'payments' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <CreditCard size={24} />
-        </button>
-        <button onClick={() => setActiveTab('portfolio')} className={activeTab === 'portfolio' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <Upload size={24} />
-        </button>
-      </nav>
     </div>
   );
 }
