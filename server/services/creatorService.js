@@ -110,13 +110,50 @@ export const getCreator = async (id) => {
 };
 
 export const updateProfile = async (userId, fields) => {
+  // Sanitize: ensure array fields are always arrays, never strings
+  const arrayFields = ['platforms', 'tags', 'qualifications', 'past_work'];
+  const sanitized = { ...fields };
+
+  for (const key of arrayFields) {
+    if (sanitized[key] !== undefined) {
+      if (typeof sanitized[key] === 'string') {
+        // Convert comma-separated string to array, filter empty
+        sanitized[key] = sanitized[key].split(',').map(s => s.trim()).filter(Boolean);
+      } else if (!Array.isArray(sanitized[key])) {
+        sanitized[key] = [];
+      }
+    }
+  }
+
+  // Ensure numeric fields are numbers
+  const numericFields = ['follower_count', 'min_budget', 'max_budget', 'rating'];
+  for (const key of numericFields) {
+    if (sanitized[key] !== undefined && sanitized[key] !== null) {
+      sanitized[key] = Number(sanitized[key]) || 0;
+    }
+  }
+
+  // Ensure boolean fields are booleans
+  const boolFields = ['is_available', 'onboarding_complete'];
+  for (const key of boolFields) {
+    if (sanitized[key] !== undefined) {
+      sanitized[key] = Boolean(sanitized[key]);
+    }
+  }
+
+  // Remove undefined values
+  Object.keys(sanitized).forEach(k => sanitized[k] === undefined && delete sanitized[k]);
+
   const { data, error } = await supabase
     .from('profiles')
-    .update(fields)
+    .update(sanitized)
     .eq('id', userId)
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) {
+    console.error('updateProfile DB error:', error.message, error.details, error.hint);
+    throw error;
+  }
   return data;
 };

@@ -59,3 +59,7 @@ export const requireRole = (...roles) => (req, res, next) => {
   }
   next();
 };
+
+// Aliases for compatibility
+export const protect = requireAuth;
+export const restrictTo = requireRole;

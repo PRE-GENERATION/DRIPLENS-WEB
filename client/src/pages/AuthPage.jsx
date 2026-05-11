@@ -1,88 +1,330 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
+import { ArrowRight, User, Briefcase, Instagram, Globe, Phone, Mail, Lock, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useOnboarding } from '../context/OnboardingContext';
 import './agency.css';
- 
+
+// ───────────────────────────────────────────────────────────────────────────
+// Sub-components (Moved outside to prevent focus loss on re-render)
+// ───────────────────────────────────────────────────────────────────────────
+
+const RoleSelector = ({ onRoleSelect, mode, setMode }) => (
+  <div className="flex flex-col w-full max-w-2xl gap-4 p-4">
+    <h2 className="text-3xl font-black mb-8 tracking-tight">I AM A...</h2>
+    
+    {/* Brand Option */}
+    <motion.button
+      whileHover={{ x: 10 }}
+      onClick={() => onRoleSelect('brand')}
+      className="group relative flex items-center justify-between w-full p-8 border-2 border-black bg-white hover:bg-black hover:text-white transition-colors duration-300 text-left"
+    >
+      <div className="flex items-center gap-6">
+        <div className="p-4 border-2 border-current">
+          <Briefcase size={32} />
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold uppercase tracking-wider">Client (Brand)</h3>
+          <p className="text-sm opacity-70">I want to hire creators for my campaigns</p>
+        </div>
+      </div>
+      <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" size={24} />
+    </motion.button>
+
+    {/* Creator Option */}
+    <motion.button
+      whileHover={{ x: 10 }}
+      onClick={() => onRoleSelect('creator')}
+      className="group relative flex items-center justify-between w-full p-8 border-2 border-black bg-white hover:bg-[#0044ff] hover:text-white transition-colors duration-300 text-left"
+    >
+      <div className="flex items-center gap-6">
+        <div className="p-4 border-2 border-current">
+          <User size={32} />
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold uppercase tracking-wider">I'M A CREATOR</h3>
+          <p className="text-sm opacity-70">I want to collaborate with brands</p>
+        </div>
+      </div>
+      <ArrowRight className="opacity-0 group-hover:opacity-100 transition-opacity" size={24} />
+    </motion.button>
+
+    <div className="mt-8 text-center">
+      <button 
+        onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+        className="text-sm font-bold underline underline-offset-4 hover:text-[#0044ff]"
+      >
+        {mode === 'login' ? "DON'T HAVE AN ACCOUNT? REGISTER" : "ALREADY HAVE AN ACCOUNT? LOGIN"}
+      </button>
+    </div>
+  </div>
+);
+
+const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, errors, apiError, loading, setSelectedRole }) => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="w-full max-w-md p-4"
+  >
+    <button 
+      onClick={() => {
+        setSelectedRole(null);
+        const newParams = new URLSearchParams(window.location.search);
+        newParams.delete('role');
+        window.history.replaceState(null, '', `${window.location.pathname}?${newParams.toString()}`);
+      }}
+      className="mb-8 text-xs font-bold uppercase tracking-widest flex items-center gap-2 hover:text-[#0044ff]"
+    >
+      ← BACK TO ROLE SELECT
+    </button>
+
+    <h2 className="text-3xl font-black mb-2 tracking-tight uppercase">
+      {mode === 'login' ? 'Welcome Back' : `Join as ${selectedRole}`}
+    </h2>
+    <p className="text-sm text-gray-500 mb-8 font-medium">
+      {mode === 'login' ? 'Sign in to your account' : 'Create your professional profile'}
+    </p>
+
+    {apiError && <div className="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 text-xs font-bold mb-6">{apiError}</div>}
+
+    <form onSubmit={handleSubmit} className="space-y-4">
+      {mode === 'register' && selectedRole === 'brand' && (
+        <>
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Brand Name</label>
+            <div className="relative">
+              <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input 
+                name="brandName"
+                value={formData.brandName}
+                onChange={handleChange}
+                placeholder="e.g. Acme Corp"
+                className="w-full p-4 pl-12 border-2 border-black focus:border-[#0044ff] outline-none font-bold placeholder:font-normal"
+              />
+            </div>
+            {errors.brandName && <span className="text-[10px] text-red-500 font-bold">{errors.brandName}</span>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Instagram</label>
+              <div className="relative">
+                <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input 
+                  name="instagramHandle"
+                  value={formData.instagramHandle}
+                  onChange={handleChange}
+                  placeholder="@handle"
+                  className="w-full p-4 pl-12 border-2 border-black focus:border-[#0044ff] outline-none font-bold"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Website</label>
+              <div className="relative">
+                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input 
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                  className="w-full p-4 pl-12 border-2 border-black focus:border-[#0044ff] outline-none font-bold"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Contact Person</label>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input 
+                name="contactName"
+                value={formData.contactName}
+                onChange={handleChange}
+                placeholder="Full Name"
+                className="w-full p-4 pl-12 border-2 border-black focus:border-[#0044ff] outline-none font-bold"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Phone Number</label>
+            <div className="relative">
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input 
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="+91 ..."
+                className="w-full p-4 pl-12 border-2 border-black focus:border-[#0044ff] outline-none font-bold"
+              />
+            </div>
+          </div>
+        </>
+      )}
+
+      <div className="space-y-1">
+        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Email Address</label>
+        <div className="relative">
+          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+          <input 
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="you@example.com"
+            className="w-full p-4 pl-12 border-2 border-black focus:border-[#0044ff] outline-none font-bold"
+          />
+        </div>
+        {errors.email && <span className="text-[10px] text-red-500 font-bold">{errors.email}</span>}
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Password</label>
+        <div className="relative">
+          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+          <input 
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            placeholder="••••••••"
+            className="w-full p-4 pl-12 border-2 border-black focus:border-[#0044ff] outline-none font-bold"
+          />
+        </div>
+        {errors.password && <span className="text-[10px] text-red-500 font-bold">{errors.password}</span>}
+      </div>
+
+      <button 
+        type="submit" 
+        disabled={loading}
+        className="w-full p-5 bg-black text-white font-black uppercase tracking-widest border-2 border-black hover:bg-[#0044ff] hover:border-[#0044ff] transition-all disabled:opacity-50"
+      >
+        {loading ? 'Processing...' : (mode === 'login' ? 'Sign In' : 'Create Account')}
+      </button>
+
+      {mode === 'register' && selectedRole === 'creator' && (
+        <div className="pt-4 space-y-4">
+          <div className="relative flex items-center py-2">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="flex-shrink mx-4 text-[10px] font-bold text-gray-400 uppercase">Or continue with</span>
+            <div className="flex-grow border-t border-gray-200"></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <button type="button" className="p-4 border-2 border-black font-bold text-xs uppercase hover:bg-gray-50">Google</button>
+            <button type="button" className="p-4 border-2 border-black font-bold text-xs uppercase hover:bg-gray-50">Instagram</button>
+          </div>
+        </div>
+      )}
+    </form>
+  </motion.div>
+);
+
 export default function AuthPage() {
-  const [searchParams] = useSearchParams();
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { login, register, isLoggedIn, user } = useAuth();
-  const { update: updateOnboarding } = useOnboarding();
- 
+
   const initialMode = searchParams.get('mode') === 'register' ? 'register' : 'login';
-  const initialRole = searchParams.get('role') === 'brand' ? 'brand' : 'creator';
- 
-  const [mode, setMode]     = useState(initialMode);
-  const [role, setRole]     = useState(initialRole);
-  const [formData, setFormData] = useState({ 
-    username: '', 
-    email: '', 
+  const initialRole = searchParams.get('role'); // 'creator' or 'brand'
+  const [mode, setMode] = useState(initialMode);
+  const [selectedRole, setSelectedRole] = useState(initialRole); 
+  
+  const [formData, setFormData] = useState({
+    // Shared
+    email: '',
     password: '',
-    display_name: '',
-    tagline: ''
+    // Brand specific
+    brandName: '',
+    instagramHandle: '',
+    website: '',
+    contactName: '',
+    phoneNumber: '',
+    // Creator specific
+    username: '', // for fallback
   });
+
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
-  const [loading, setLoading]   = useState(false);
- 
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (isLoggedIn && user) {
-      // Only redirect to onboarding if we are in registration mode and onboarding is incomplete.
-      // If we are in login mode, we go straight to dashboard even if onboarding is not complete.
-      if (mode === 'register' && user.role === 'creator' && !user.onboarding_complete) {
+      if (user.role === 'creator' && !user.onboarding_complete) {
         navigate('/onboarding/step-1', { replace: true });
       } else {
         const from = location.state?.from?.pathname || `/dashboard/${user.role}`;
         navigate(from, { replace: true });
       }
     }
-  }, [isLoggedIn, user, mode, navigate, location.state]);
- 
-  useEffect(() => {
-    setMode(searchParams.get('mode') === 'register' ? 'register' : 'login');
-    if (searchParams.get('role')) setRole(searchParams.get('role'));
-  }, [searchParams]);
- 
-  const validate = () => {
-    const e = {};
-    if (mode === 'register') {
-      if (!formData.username.trim()) e.username = 'Username is required';
-      if (!formData.display_name.trim()) e.display_name = 'Display name is required';
-    }
-    if (!formData.email.trim()) e.email = 'Email/Username is required';
-    if (formData.password.length < 8) e.password = 'Min 8 characters';
-    return e;
-  };
- 
+  }, [isLoggedIn, user, navigate, location.state]);
+
   const handleChange = (e) => {
     setFormData(p => ({ ...p, [e.target.name]: e.target.value }));
     if (errors[e.target.name]) setErrors(p => ({ ...p, [e.target.name]: '' }));
   };
- 
+
+  const validate = () => {
+    const e = {};
+    if (!formData.email.trim()) e.email = 'Required';
+    if (formData.password.length < 8) e.password = 'Min 8 characters';
+    
+    if (mode === 'register') {
+      if (selectedRole === 'brand') {
+        // Brand fields are now optional as requested
+      } else {
+        // Creator basic validation
+      }
+    }
+    return e;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError('');
     const validationErrors = validate();
     if (Object.keys(validationErrors).length) { setErrors(validationErrors); return; }
- 
+
     setLoading(true);
     try {
       if (mode === 'register') {
-        await register(formData.username, formData.email, formData.password, role, {
-          display_name: formData.display_name,
-          tagline: formData.tagline
-        });
-        // Sync to onboarding draft
-        updateOnboarding({
-          display_name: formData.display_name,
-          tagline: formData.tagline
-        });
+        let userData;
+        if (selectedRole === 'brand') {
+          const derivedUsername = formData.brandName
+            .toLowerCase()
+            .replace(/[^a-z0-9_.]/g, '_')
+            .slice(0, 30);
+          
+          userData = await register(derivedUsername, formData.email, formData.password, 'brand', {
+            brand_name:       formData.brandName,
+            instagram_handle: formData.instagramHandle,
+            website:          formData.website,
+            contact_person:   formData.contactName,
+            phone_number:     formData.phoneNumber,
+          });
+        } else {
+          const derivedUsername = formData.email.split('@')[0];
+          userData = await register(derivedUsername, formData.email, formData.password, 'creator');
+        }
+
+        // Redirect after register
+        if (userData.role === 'creator') {
+          navigate('/onboarding/step-1', { replace: true });
+        } else {
+          navigate('/dashboard/brand', { replace: true });
+        }
       } else {
-        await login(formData.email, formData.password);
+        const userData = await login(formData.email, formData.password);
+        
+        // Redirect after login
+        if (userData.role === 'creator' && !userData.onboarding_complete) {
+          navigate('/onboarding/step-1', { replace: true });
+        } else {
+          navigate(`/dashboard/${userData.role}`, { replace: true });
+        }
       }
     } catch (err) {
       setApiError(err.message || 'Authentication failed');
@@ -90,140 +332,83 @@ export default function AuthPage() {
       setLoading(false);
     }
   };
- 
+
+  const handleRoleSelect = (role) => {
+    setSelectedRole(role);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('role', role);
+    setSearchParams(newParams);
+  };
+
   return (
-    <div className="agency-auth-page">
+    <div className="min-h-screen bg-white flex flex-col md:flex-row">
       <Helmet>
         <title>{mode === 'register' ? 'Join' : 'Sign In'} — Driplens</title>
       </Helmet>
- 
-      <div className="auth-left">
-        <Link to="/" style={{ color: 'white', textDecoration: 'none', fontWeight: 900, fontSize: '1.2rem' }}>DRIPLENS</Link>
-        <div>
-          <motion.div 
-            initial={{ x: -50, opacity: 0 }}
+
+      {/* Hero Section */}
+      <div className="md:w-[40%] bg-black text-white p-8 md:p-16 flex flex-col justify-between relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10 pointer-events-none" 
+             style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        
+        <Link to="/" className="text-2xl font-black tracking-tighter relative z-10">DRIPLENS</Link>
+        
+        <div className="relative z-10">
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.8 }}
           >
-            <h1>{mode === 'register' ? 'JOIN THE' : 'BACK TO'}</h1>
-            <h1 className="outline-text" style={{ WebkitTextStroke: '2px white' }}>MOVEMENT</h1>
+            <h1 className="text-6xl md:text-8xl font-black leading-none mb-4">
+              THE<br />
+              <span className="text-transparent" style={{ WebkitTextStroke: '2px white' }}>ELITE</span><br />
+              CLUB
+            </h1>
+            <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-60">Professional Creator Network</p>
           </motion.div>
         </div>
-        <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '2px' }}>
-          THE PROFESSIONAL MERITOCRACY
+
+        <div className="text-[10px] font-bold uppercase tracking-widest opacity-40 relative z-10">
+          © 2026 DRIPLENS TECHNOLOGY PVT LTD
         </div>
       </div>
- 
-      <div className="auth-right">
-        <motion.div 
-          className="auth-form-wrapper"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2>{mode === 'register' ? 'CREATE ACCOUNT' : 'WELCOME BACK'}</h2>
-          
-          <div className="auth-tabs">
-            <button className={`auth-tab ${mode === 'login' ? 'active' : ''}`} onClick={() => setMode('login')}>LOGIN</button>
-            <button className={`auth-tab ${mode === 'register' ? 'active' : ''}`} onClick={() => setMode('register')}>REGISTER</button>
-          </div>
- 
-          {apiError && <div style={{ color: 'red', fontWeight: 700, marginBottom: '1rem', fontSize: '0.8rem' }}>{apiError}</div>}
- 
-          <form onSubmit={handleSubmit}>
-            {mode === 'register' && (
-              <div className="agency-form-group">
-                <label>USERNAME</label>
-                <input 
-                  name="username" 
-                  value={formData.username} 
-                  onChange={handleChange} 
-                  className="agency-input" 
-                  placeholder="handle"
-                />
-                {errors.username && <span style={{ color: 'red', fontSize: '10px' }}>{errors.username}</span>}
-              </div>
-            )}
- 
-            <div className="agency-form-group">
-              <label>EMAIL / USERNAME</label>
-              <input 
-                name="email" 
-                value={formData.email} 
-                onChange={handleChange} 
-                className="agency-input" 
-                placeholder="you@example.com"
-              />
-              {errors.email && <span style={{ color: 'red', fontSize: '10px' }}>{errors.email}</span>}
-            </div>
 
-            {mode === 'register' && (
-              <>
-                <div className="agency-form-group">
-                  <label>{role === 'creator' ? 'DISPLAY NAME' : 'BRAND NAME'}</label>
-                  <input 
-                    name="display_name" 
-                    value={formData.display_name} 
-                    onChange={handleChange} 
-                    className="agency-input" 
-                    placeholder={role === 'creator' ? 'Your Public Name' : 'Company Name'}
-                  />
-                  {errors.display_name && <span style={{ color: 'red', fontSize: '10px' }}>{errors.display_name}</span>}
-                </div>
-
-                <div className="agency-form-group">
-                  <label>{role === 'creator' ? 'TAGLINE' : 'BRAND SLOGAN'}</label>
-                  <input 
-                    name="tagline" 
-                    value={formData.tagline} 
-                    onChange={handleChange} 
-                    className="agency-input" 
-                    placeholder={role === 'creator' ? 'Briefly describe what you do' : 'Our Brand Vision'}
-                  />
-                </div>
-              </>
-            )}
- 
-            <div className="agency-form-group">
-              <label>PASSWORD</label>
-              <input 
-                name="password" 
-                type="password" 
-                value={formData.password} 
-                onChange={handleChange} 
-                className="agency-input" 
-                placeholder="********"
+      {/* Interaction Area */}
+      <div className="flex-1 flex items-center justify-center bg-white">
+        <AnimatePresence mode="wait">
+          {!selectedRole ? (
+            <motion.div
+              key="selector"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="w-full flex justify-center"
+            >
+              <RoleSelector onRoleSelect={handleRoleSelect} mode={mode} setMode={setMode} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="w-full flex justify-center"
+            >
+              <AuthForm 
+                mode={mode}
+                selectedRole={selectedRole}
+                formData={formData}
+                handleChange={handleChange}
+                handleSubmit={handleSubmit}
+                errors={errors}
+                apiError={apiError}
+                loading={loading}
+                setSelectedRole={setSelectedRole}
               />
-              {errors.password && <span style={{ color: 'red', fontSize: '10px' }}>{errors.password}</span>}
-            </div>
- 
-            {mode === 'register' && (
-              <div className="agency-form-group">
-                <label>I AM A</label>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                   <button 
-                    type="button" 
-                    className="agency-btn-book"
-                    onClick={() => setRole('creator')}
-                    style={{ flex: 1, backgroundColor: role === 'creator' ? '#0044ff' : 'white', color: role === 'creator' ? 'white' : 'black' }}
-                   >CREATOR</button>
-                   <button 
-                    type="button" 
-                    className="agency-btn-book"
-                    onClick={() => setRole('brand')}
-                    style={{ flex: 1, backgroundColor: role === 'brand' ? '#0044ff' : 'white', color: role === 'brand' ? 'white' : 'black' }}
-                   >BRAND</button>
-                </div>
-              </div>
-            )}
- 
-            <button className="agency-btn-submit" disabled={loading} type="submit">
-              {loading ? 'PROCESSING...' : (mode === 'register' ? 'JOIN NOW' : 'SIGN IN')}
-            </button>
-          </form>
-        </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
 }
-

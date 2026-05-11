@@ -10,7 +10,10 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res,
   try {
     const result = await authService.register(req.body);
     res.status(201).json({ success: true, data: result });
-  } catch (err) { next(err); }
+  } catch (err) {
+    console.error('[POST /auth/register] Error:', err.message || err);
+    next(err);
+  }
 });
 
 router.post('/login', authLimiter, validate(loginSchema), async (req, res, next) => {

@@ -1,387 +1,367 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
-  Zap, 
-  MessageSquare, 
-  User, 
   Plus, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
-  CheckSquare,
-  BarChart3,
-  ExternalLink,
-  Search,
-  ArrowUpRight
+  LayoutDashboard, 
+  Users, 
+  Briefcase, 
+  CreditCard, 
+  BarChart3, 
+  MessageSquare,
+  BadgeCheck,
+  CheckCircle2,
+  Clock,
+  Zap
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 
-// ─── StatCard ────────────────────────────────────────────────────────────────
-function StatCard({ label, value, loading, icon: Icon }) {
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white border border-[#EEEEEE] p-6 relative overflow-hidden group"
-    >
-      <div className="flex justify-between items-start relative z-10">
-        <div>
-          <p className="text-[#AAAAAA] text-[9px] font-bold uppercase tracking-[0.4em] mb-2">{label}</p>
-          {loading ? (
-            <div className="h-10 w-24 bg-[#F5F5F5] animate-pulse" />
-          ) : (
-            <h2 className="text-4xl font-bold text-black tracking-tighter">{value}</h2>
-          )}
+// ─────────────────────────────────────────────────────────────────────────────
+// Components (Outside to prevent focus loss and recreation)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center gap-4 p-4 text-xs font-bold uppercase tracking-widest transition-all ${
+      active 
+        ? 'border-l-[3px] border-[#0044ff] text-black bg-gray-50/50' 
+        : 'border-l-[3px] border-transparent text-gray-400 hover:text-black hover:bg-gray-50'
+    }`}
+  >
+    <Icon size={18} />
+    <span className="flex-1 text-left">{label}</span>
+  </button>
+);
+
+const SectionHeader = ({ title, subtitle, children }) => (
+  <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
+    <div>
+      <h2 className="text-4xl font-black tracking-tighter uppercase mb-2">{title}</h2>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{subtitle}</p>
+    </div>
+    <div className="flex gap-2">
+      {children}
+    </div>
+  </div>
+);
+
+const MyCampaigns = ({ campaigns, setActiveTab }) => (
+  <div className="space-y-1">
+    <SectionHeader title="My Campaigns" subtitle="Track your active opportunities">
+      <Link to="/opportunities/new" className="flex items-center gap-2 p-4 bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#0044ff] transition-all border-2 border-black">
+        <Plus size={14} /> Post Opportunity
+      </Link>
+    </SectionHeader>
+
+    <div className="border-t border-gray-100">
+      {campaigns.length === 0 ? (
+        <div className="py-20 text-center border-b border-gray-100">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No campaigns found</p>
         </div>
-        <div className="p-2 bg-[#FAFAFA] border border-[#EEEEEE] group-hover:border-black transition-colors">
-          <Icon className="w-4 h-4 text-[#AAAAAA] group-hover:text-black transition-colors" />
+      ) : (
+        campaigns.map(c => (
+          <div key={c.id} className="group flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all cursor-pointer">
+            <div className="flex gap-6 items-center">
+              <div className="w-12 h-12 border-2 border-black flex items-center justify-center font-black">
+                {c.status === 'live' ? <Clock size={20} /> : <CheckCircle2 size={20} />}
+              </div>
+              <div>
+                <h3 className="text-xl font-bold tracking-tight">{c.title}</h3>
+                <div className="flex gap-4 mt-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{c.budget_type}</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">•</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{c.niche?.join(', ')}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-12 mt-4 md:mt-0">
+              <div className="text-right">
+                <p className="text-xl font-black">₹{Number(c.budget_amount || 0).toLocaleString()}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Budget</p>
+              </div>
+              <button onClick={() => { setActiveTab('applications'); }} className="p-4 border-2 border-black hover:bg-black hover:text-white transition-all text-[10px] font-black uppercase tracking-widest">
+                View Apps
+              </button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+);
+
+const Applications = ({ applications, handleApplicationAction, smartSort }) => (
+  <div className="space-y-1">
+    <SectionHeader title="Applications" subtitle="Creators who want to collaborate">
+      <button onClick={smartSort} className="flex items-center gap-2 p-4 border-2 border-black text-black text-[10px] font-black uppercase tracking-widest hover:bg-black hover:text-white transition-all">
+        <Zap size={14} className="text-[#0044ff]" /> Smart Sort
+      </button>
+    </SectionHeader>
+
+    <div className="border-t border-gray-100">
+      {applications.length === 0 ? (
+        <div className="py-20 text-center border-b border-gray-100">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No applications yet</p>
         </div>
+      ) : (
+        applications.map(app => (
+          <div key={app.id} className="group flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all">
+            <div className="flex gap-6 items-center">
+              <div className="w-16 h-16 border-2 border-black">
+                <img src={app.creator?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-bold tracking-tight">{app.creator?.username}</h3>
+                  {app.creator?.is_verified && <BadgeCheck size={16} className="text-[#0044ff]" />}
+                </div>
+                <p className="text-[10px] font-bold text-[#0044ff] uppercase tracking-widest mb-2">{app.opportunity_title}</p>
+                <div className="flex gap-4">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{app.creator?.follower_count?.toLocaleString()} Followers</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">•</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{app.creator?.rating || 0}/5 Rating</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-8 mt-6 md:mt-0">
+              <div className="text-right">
+                <p className="text-xl font-black">₹{Number(app.expected_price || 0).toLocaleString()}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Requested</p>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleApplicationAction(app.id, 'shortlisted')}
+                  className="p-4 border-2 border-black text-[10px] font-black uppercase tracking-widest hover:bg-[#0044ff] hover:border-[#0044ff] hover:text-white transition-all"
+                >
+                  Shortlist
+                </button>
+                <button 
+                  onClick={() => handleApplicationAction(app.id, 'rejected')}
+                  className="p-4 border-2 border-gray-200 text-gray-400 text-[10px] font-black uppercase tracking-widest hover:border-black hover:text-black transition-all"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+);
+
+const Analytics = ({ stats }) => (
+  <div>
+    <SectionHeader title="Analytics" subtitle="Real-time performance metrics" />
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-1">
+      <div className="p-12 border-2 border-black">
+        <p className="text-4xl font-black tracking-tighter">{stats.views.toLocaleString()}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Total Impressions</p>
       </div>
-      <div className="absolute bottom-0 left-0 w-full h-[1px] bg-black translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-    </motion.div>
-  );
-}
+      <div className="p-12 border-2 border-black">
+        <p className="text-4xl font-black tracking-tighter">{stats.appsReceived}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Applications Received</p>
+      </div>
+      <div className="p-12 border-2 border-black">
+        <p className="text-4xl font-black tracking-tighter">{stats.completionRate}%</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Campaign Completion</p>
+      </div>
+    </div>
+  </div>
+);
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const map = {
-    Pending:   'border-[#EEEEEE] text-[#AAAAAA]',
-    Accepted:  'border-black bg-black text-white',
-    Declined:  'border-red-200 text-red-500',
-    Completed: 'border-green-200 text-green-600',
-    Review:    'border-blue-200 text-blue-600',
-  };
-  return (
-    <span className={`inline-block px-3 py-1 text-[8px] font-bold uppercase tracking-widest border ${map[status] ?? 'border-[#EEEEEE] text-[#AAAAAA]'}`}>
-      {status}
-    </span>
-  );
-}
+const Payments = ({ payments }) => (
+  <div>
+    <SectionHeader title="Payments" subtitle="Escrow & Transaction History" />
+    <div className="border-t border-gray-100">
+      {payments.length === 0 ? (
+        <div className="py-20 text-center border-b border-gray-100">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No transactions yet</p>
+        </div>
+      ) : (
+        payments.map(p => (
+          <div key={p.id} className="flex items-center justify-between p-8 border-b border-gray-100">
+            <div className="flex items-center gap-6">
+              <div className={`p-4 border-2 ${p.status === 'released' ? 'border-green-500 text-green-500' : 'border-black'}`}>
+                <CreditCard size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">₹{Number(p.amount).toLocaleString()}</h3>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">To {p.creator?.username} • {p.opportunity?.title}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-8">
+              <span className={`text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1 border-2 ${
+                p.status === 'released' ? 'bg-green-500 border-green-500 text-white' : 'border-black'
+              }`}>
+                {p.status}
+              </span>
+              {p.status === 'held' && (
+                <button className="text-[10px] font-black uppercase tracking-widest underline underline-offset-4 hover:text-[#0044ff]">
+                  Release Funds
+                </button>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+);
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Page
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function BrandDashboard() {
   const { user } = useAuth();
-  const [requests,    setRequests]    = useState([]);
-  const [loading,     setLoading]     = useState(true);
-  const [form,        setForm]        = useState({
-    creator_id: '', project_title: '', project_description: '', budget: '',
+  const navigate = useNavigate();
+  const socket = useSocket();
+  const [activeTab, setActiveTab] = useState('campaigns');
+  const [loading, setLoading] = useState(true);
+  
+  // Data State
+  const [campaigns, setCampaigns] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [paymentsData, setPaymentsData] = useState([]);
+  const [stats, setStats] = useState({
+    views: 0,
+    appsReceived: 0,
+    completionRate: 0
   });
-  const [submitting,  setSubmitting]  = useState(false);
-  const [formError,   setFormError]   = useState('');
-  const [formSuccess, setFormSuccess] = useState('');
+
+  // Redirect to verification if brand is not yet verified
+  useEffect(() => {
+    if (user && !user.is_verified) {
+      navigate('/verify/brand', { replace: true });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await api.get('/hiring');
-        const all  = res.data?.requests ?? [];
-        setRequests(all.filter(r => r.brand_id === user?.id));
-      } catch (err) {
-        console.error('Failed to load hiring requests:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (user?.id) load();
-  }, [user?.id]);
- 
-   const socket = useSocket();
- 
-   useEffect(() => {
-     if (!socket) return;
-     const handleHiringUpdate = (updatedReq) => {
-       setRequests(prev => prev.map(r => r.id === updatedReq.id ? updatedReq : r));
-     };
-     socket.on('hiring_update', handleHiringUpdate);
-     return () => socket.off('hiring_update', handleHiringUpdate);
-   }, [socket]);
+    fetchDashboardData();
+  }, [activeTab]);
 
-  const totalBriefs  = requests.length;
-  const pendingCount = requests.filter(r => r.status === 'Pending').length;
-  const activeCount  = requests.filter(r => r.status === 'Accepted').length;
-
-  const handleChange = (e) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    setFormError('');
-    setFormSuccess('');
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormError('');
-    setFormSuccess('');
-
-    if (form.project_title.trim().length < 3) {
-      setFormError('Project title too short.');
-      return;
-    }
-    const budgetNum = parseFloat(form.budget);
-    if (!budgetNum || budgetNum <= 0) {
-      setFormError('Invalid budget.');
-      return;
-    }
-
-    setSubmitting(true);
+  const fetchDashboardData = async () => {
+    setLoading(true);
     try {
-      const payload = {
-        project_title:       form.project_title.trim(),
-        project_description: form.project_description.trim(),
-        budget:              budgetNum,
-        ...(form.creator_id.trim() && { creator_id: form.creator_id.trim() }),
-      };
-      const res = await api.post('/hiring', payload);
-      const newRequest = res.data?.request;
-      if (newRequest) setRequests(prev => [newRequest, ...prev]);
-      setFormSuccess('Brief posted successfully.');
-      setForm({ creator_id: '', project_title: '', project_description: '', budget: '' });
+      if (activeTab === 'campaigns') {
+        const res = await api.get('/opportunities/my/brand');
+        setCampaigns(res.data);
+      } else if (activeTab === 'applications') {
+        const res = await api.get('/opportunities/my/brand');
+        const apps = [];
+        for (const opp of res.data) {
+          const appRes = await api.get(`/opportunities/${opp.id}/applications`);
+          apps.push(...appRes.data.map(a => ({ ...a, opportunity_title: opp.title })));
+        }
+        setApplications(apps);
+      } else if (activeTab === 'payments') {
+        const res = await api.get('/payments');
+        setPaymentsData(res.data);
+      }
+      // Mock stats
+      setStats({
+        views: 1240,
+        appsReceived: campaigns.reduce((acc, c) => acc + (c.apps_count || 0), 0),
+        completionRate: 98
+      });
     } catch (err) {
-      setFormError(err.message || 'Failed to post brief.');
+      console.error('Dashboard fetch error:', err);
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  const handleApplicationAction = async (appId, status) => {
+    try {
+      await api.patch(`/opportunities/applications/${appId}`, { status });
+      setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a));
+    } catch (err) {
+      console.error('App action error:', err);
+    }
+  };
+
+  const smartSort = () => {
+    setApplications(prev => [...prev].sort((a, b) => {
+      const scoreA = (a.creator.follower_count || 0) * 0.4 + (a.creator.rating || 0) * 0.6;
+      const scoreB = (b.creator.follower_count || 0) * 0.4 + (b.creator.rating || 0) * 0.6;
+      return scoreB - scoreA;
+    }));
   };
 
   return (
-    <div className="min-h-screen bg-white selection:bg-black selection:text-white antialiased">
+    <div className="min-h-screen bg-white flex flex-col md:flex-row">
       <Helmet>
-        <title>Dashboard — {user?.username}</title>
+        <title>Brand Dashboard — Driplens</title>
       </Helmet>
 
-      {/* ── Top Bar Navigation ── */}
-      <div className="border-b border-[#F5F5F5] sticky top-0 z-50 bg-white/80 backdrop-blur-xl">
-        <div className="max-w-[1600px] mx-auto px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-             <div className="w-2 h-2 bg-black rounded-full" />
-             <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-black">Console v1.0</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link to="/messages" className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] font-bold text-[#AAAAAA] hover:text-black transition-colors">
-              <MessageSquare className="w-3.5 h-3.5" /> Messages
-            </Link>
-            <Link to="/profile/edit" className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] font-bold text-[#AAAAAA] hover:text-black transition-colors">
-              <User className="w-3.5 h-3.5" /> Profile
-            </Link>
-          </div>
+      {/* Sidebar - Desktop */}
+      <aside className="hidden md:flex flex-col w-72 border-r-2 border-black h-screen sticky top-0 bg-white">
+        <div className="p-8 border-b-2 border-black flex items-center justify-between">
+          <Link to="/" className="text-2xl font-black tracking-tighter">DRIPLENS</Link>
+          {user?.is_verified && <BadgeCheck className="text-[#0044ff]" size={20} />}
         </div>
-      </div>
 
-      <div className="max-w-[1600px] mx-auto px-8 py-12">
-        
-        {/* ── Header Section ── */}
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-16"
-        >
-          <div className="flex items-center gap-4 mb-4">
-            <div className="px-3 py-1 border border-black text-[9px] font-bold uppercase tracking-[0.4em]">Brand Account</div>
-            <div className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#AAAAAA]">Session Active</div>
-          </div>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-4">
-            Welcome back, <br />
-            <span className="text-[#DDDDDD]">{user?.username}</span>
-          </h1>
-          <p className="text-[#666666] text-sm font-light leading-relaxed max-w-md">
-            Overview of your creative ecosystem. Track, manage, and scale your brand partnerships.
-          </p>
-        </motion.div>
+        <nav className="flex-1 py-8">
+          <SidebarItem icon={LayoutDashboard} label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+          <SidebarItem icon={Plus} label="Post Opportunity" active={activeTab === 'post'} onClick={() => navigate('/opportunities/new')} />
+          <SidebarItem icon={Briefcase} label="My Campaigns" active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} />
+          <SidebarItem icon={Users} label="Applications" active={activeTab === 'applications'} onClick={() => setActiveTab('applications')} />
+          <SidebarItem icon={CreditCard} label="Payments" active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} />
+          <SidebarItem icon={BarChart3} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
+        </nav>
 
-        {/* ── Stats Grid ── */}
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 md:grid-cols-3 gap-1 mb-16"
-        >
-          <StatCard label="Total Briefs" value={totalBriefs} loading={loading} icon={BarChart3} />
-          <StatCard label="Awaiting Response" value={pendingCount} loading={loading} icon={Clock} />
-          <StatCard label="Active Network" value={activeCount} loading={loading} icon={Zap} />
-        </motion.div>
+        <div className="p-8 border-t-2 border-black">
+          <Link to="/messages" className="flex items-center gap-3 text-xs font-black uppercase tracking-widest hover:text-[#0044ff] transition-all">
+            <MessageSquare size={16} /> Comms Center
+          </Link>
+        </div>
+      </aside>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 items-start">
-          
-          {/* ── Tracker Section ── */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-8 border-b border-[#F5F5F5] pb-6">
-              <h2 className="text-[10px] uppercase tracking-[0.5em] font-black">Sent Requests Tracker</h2>
-              <div className="flex items-center gap-4">
-                <Search className="w-3.5 h-3.5 text-[#AAAAAA]" />
-                <span className="text-[9px] uppercase tracking-widest font-bold text-[#AAAAAA]">Filter by status</span>
-              </div>
-            </div>
-
-            {loading ? (
-              <div className="space-y-1">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-16 bg-[#FAFAFA] animate-pulse" />
-                ))}
-              </div>
-            ) : requests.length === 0 ? (
-              <div className="border border-dashed border-[#EEEEEE] py-20 text-center">
-                <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#AAAAAA] mb-4">No data available</p>
-                <button className="text-[9px] font-bold uppercase tracking-widest border border-[#EEEEEE] px-6 py-3 hover:border-black transition-all">Generate First Brief</button>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {requests.map(r => (
-                  <motion.div 
-                    key={r.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="group border border-[#F5F5F5] bg-white p-6 flex flex-wrap items-center justify-between gap-6 hover:border-black hover:shadow-xl transition-all duration-500 relative overflow-hidden"
-                  >
-                    <div className="flex items-center gap-4">
-                      {r.creator?.avatar_url ? (
-                        <img src={r.creator.avatar_url} alt="" className="w-10 h-10 object-cover grayscale group-hover:grayscale-0 transition-all" />
-                      ) : (
-                        <div className="w-10 h-10 bg-[#FAFAFA] border border-[#EEEEEE] flex items-center justify-center">
-                          <User className="w-4 h-4 text-[#AAAAAA]" />
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="text-sm font-bold tracking-tight mb-1">{r.project_title}</h3>
-                        <p className="text-[9px] uppercase tracking-widest font-bold text-[#AAAAAA]">to {r.creator?.username ?? 'Network'}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-12">
-                      <div className="text-right">
-                        <div className="text-xs font-black mb-1">${Number(r.budget).toLocaleString()}</div>
-                        <div className="text-[8px] uppercase tracking-widest text-[#AAAAAA]">Allocation</div>
-                      </div>
-                      <StatusBadge status={r.status} />
-                      <div className="flex items-center gap-3">
-                         {r.status === 'Accepted' ? (
-                           <Link to="/messages" className="p-2 border border-[#EEEEEE] hover:border-black transition-colors group/btn">
-                             <MessageSquare className="w-3.5 h-3.5 text-[#AAAAAA] group-hover/btn:text-black transition-colors" />
-                           </Link>
-                         ) : (
-                           <div className="p-2 border border-[#F9F9F9] opacity-30 cursor-not-allowed">
-                             <MessageSquare className="w-3.5 h-3.5 text-[#AAAAAA]" />
-                           </div>
-                         )}
-                         <Link to={`/profile/${r.creator?.id}`} className="p-2 border border-[#EEEEEE] hover:border-black transition-colors group/btn">
-                            <ArrowUpRight className="w-3.5 h-3.5 text-[#AAAAAA] group-hover/btn:text-black transition-colors" />
-                         </Link>
-                      </div>
-                    </div>
-                    
-                    <div className="absolute top-0 right-0 w-8 h-8 border-t border-r border-transparent group-hover:border-black transition-all duration-500" />
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ── Post a Brief Sidebar ── */}
-          <div className="lg:col-span-1 space-y-12">
-            <div className="bg-black p-8 text-white relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/5 to-transparent -z-0" />
-              <div className="relative z-10">
-                <h2 className="text-2xl font-bold tracking-tighter mb-2">Execute Brief</h2>
-                <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#666666] mb-10">Initialize Network Response</p>
-
-                <form className="space-y-6" onSubmit={handleSubmit}>
-                  <div className="space-y-2">
-                    <label className="text-[8px] uppercase tracking-[0.4em] font-bold text-[#666666]">Identifier</label>
-                    <input
-                      type="text"
-                      name="creator_id"
-                      value={form.creator_id}
-                      onChange={handleChange}
-                      placeholder="CREATOR_ID (OPTIONAL)"
-                      className="w-full bg-[#111111] border border-[#222222] p-4 text-[10px] font-bold tracking-widest text-white placeholder-[#333333] focus:outline-none focus:border-[#444444] transition-colors"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-[8px] uppercase tracking-[0.4em] font-bold text-[#666666]">Assignment Title</label>
-                    <input
-                      type="text"
-                      name="project_title"
-                      value={form.project_title}
-                      onChange={handleChange}
-                      placeholder="ENTER PROJECT TITLE"
-                      required
-                      className="w-full bg-[#111111] border border-[#222222] p-4 text-[10px] font-bold tracking-widest text-white placeholder-[#333333] focus:outline-none focus:border-[#444444] transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[8px] uppercase tracking-[0.4em] font-bold text-[#666666]">Allocation ($)</label>
-                    <input
-                      type="number"
-                      name="budget"
-                      value={form.budget}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                      required
-                      min="1"
-                      step="0.01"
-                      className="w-full bg-[#111111] border border-[#222222] p-4 text-[10px] font-bold tracking-widest text-white placeholder-[#333333] focus:outline-none focus:border-[#444444] transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[8px] uppercase tracking-[0.4em] font-bold text-[#666666]">Directive</label>
-                    <textarea
-                      name="project_description"
-                      value={form.project_description}
-                      onChange={handleChange}
-                      placeholder="DESCRIBE THE ASSIGNMENT..."
-                      required
-                      rows={4}
-                      className="w-full bg-[#111111] border border-[#222222] p-4 text-[10px] font-bold tracking-widest text-white placeholder-[#333333] focus:outline-none focus:border-[#444444] transition-colors resize-none"
-                    />
-                  </div>
-
-                  <AnimatePresence>
-                    {(formError || formSuccess) && (
-                      <motion.p 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className={`text-[9px] font-bold uppercase tracking-widest ${formError ? 'text-red-500' : 'text-green-500'}`}
-                      >
-                        {formError || formSuccess}
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full bg-white text-black text-[10px] font-black uppercase tracking-[0.5em] py-5 hover:bg-[#EEEEEE] transition-all disabled:opacity-50 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-                  >
-                    {submitting ? 'PROCESSING...' : 'INITIALIZE BRIEF'}
-                  </button>
-                </form>
-              </div>
-            </div>
-
-            <Link
-              to="/messages"
-              className="group border border-[#EEEEEE] p-8 flex items-center justify-between hover:border-black transition-all"
+      {/* Main Content */}
+      <main className="flex-1 p-8 md:p-16">
+        <div className="max-w-5xl mx-auto">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
             >
-              <div>
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.5em] mb-1">Encrypted Comms</h3>
-                <p className="text-[8px] text-[#AAAAAA] uppercase tracking-widest font-bold">Access all active threads</p>
-              </div>
-              <div className="p-3 bg-[#FAFAFA] border border-[#EEEEEE] group-hover:border-black transition-colors">
-                 <MessageSquare className="w-4 h-4 text-[#AAAAAA] group-hover:text-black transition-colors" />
-              </div>
-            </Link>
-          </div>
+              {activeTab === 'campaigns' && <MyCampaigns campaigns={campaigns} setActiveTab={setActiveTab} />}
+              {activeTab === 'applications' && <Applications applications={applications} handleApplicationAction={handleApplicationAction} smartSort={smartSort} />}
+              {activeTab === 'analytics' && <Analytics stats={stats} />}
+              {activeTab === 'payments' && <Payments payments={paymentsData} />}
+              {activeTab === 'overview' && <MyCampaigns campaigns={campaigns} setActiveTab={setActiveTab} />}
+            </motion.div>
+          </AnimatePresence>
         </div>
-      </div>
+      </main>
+
+      {/* Bottom Nav - Mobile */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t-2 border-black flex justify-around p-4 z-50">
+        <button onClick={() => setActiveTab('campaigns')} className={activeTab === 'campaigns' ? 'text-[#0044ff]' : 'text-gray-400'}>
+          <Briefcase size={24} />
+        </button>
+        <button onClick={() => setActiveTab('applications')} className={activeTab === 'applications' ? 'text-[#0044ff]' : 'text-gray-400'}>
+          <Users size={24} />
+        </button>
+        <button onClick={() => navigate('/opportunities/new')} className="text-black">
+          <Plus size={24} />
+        </button>
+        <button onClick={() => setActiveTab('payments')} className={activeTab === 'payments' ? 'text-[#0044ff]' : 'text-gray-400'}>
+          <CreditCard size={24} />
+        </button>
+        <button onClick={() => setActiveTab('analytics')} className={activeTab === 'analytics' ? 'text-[#0044ff]' : 'text-gray-400'}>
+          <BarChart3 size={24} />
+        </button>
+      </nav>
     </div>
   );
 }

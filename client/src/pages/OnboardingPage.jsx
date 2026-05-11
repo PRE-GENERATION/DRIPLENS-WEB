@@ -9,14 +9,14 @@ import { api } from '../lib/api';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { label: 'Cinematography', icon: '🎥' },
-  { label: 'Photography',    icon: '📸' },
-  { label: '3D Motion',      icon: '🧊' },
-  { label: 'Design',         icon: '🎨' },
-  { label: 'Illustration',   icon: '✒️' },
-  { label: 'Animation',      icon: '🎞️' },
-  { label: 'Graphic Design', icon: '📐' },
-  { label: 'VFX',            icon: '💥' },
+  { label: 'Cinematography' },
+  { label: 'Photography' },
+  { label: '3D Motion' },
+  { label: 'Design' },
+  { label: 'Illustration' },
+  { label: 'Animation' },
+  { label: 'Graphic Design' },
+  { label: 'VFX' },
 ];
 
 const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Twitter', 'Twitch', 'LinkedIn'];
@@ -642,7 +642,7 @@ function Step5({ onBack, onSubmit, loading }) {
         <input 
           value={data.website} 
           onChange={e => update({ website: e.target.value })} 
-          placeholder="https://docs.google.com/..." 
+          placeholder="Portfolio link (Google Drive, Behance, etc.)" 
           style={{
             width: '100%', padding: '10px 14px',
             border: '1.5px solid #E5E7EB',
@@ -694,10 +694,10 @@ export default function OnboardingPage() {
   const [done, setDone] = useState(false);
   
   useEffect(() => {
-    if (user?.onboarding_complete) {
+    if (user?.onboarding_complete && !done) {
       navigate(`/dashboard/${user.role}`, { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, done]);
 
   const next = () => setStep(s => Math.min(s + 1, 5));
   const back = () => setStep(s => Math.max(s - 1, 1));
@@ -705,7 +705,6 @@ export default function OnboardingPage() {
   const submit = async () => {
     setLoading(true);
     try {
-      // Compute audience tier
       const follower_count = parseInt(data.follower_count) || 0;
       let audience_tier = null;
       if (follower_count >= 1_000_000) audience_tier = 'Mega';
@@ -714,43 +713,51 @@ export default function OnboardingPage() {
       else if (follower_count >= 1)       audience_tier = 'Nano';
 
       const payload = {
-        display_name:       data.display_name || user?.username,
-        category:           (data.categories || []).join(','),
-        tagline:            data.tagline,
-        platforms:          data.platforms,
-        platform_urls:      data.platform_urls,
-        primary_platform:   data.primary_platform || data.platforms[0] || '',
+        display_name:        data.display_name || user?.username,
+        category:            (data.categories || []).join(','),
+        tagline:             data.tagline,
+        platforms: Array.isArray(data.platforms)
+          ? data.platforms.filter(Boolean)
+          : (data.platforms ? [data.platforms] : []),
+        platform_urls:       data.platform_urls,
+        primary_platform:    data.primary_platform || data.platforms?.[0] || '',
         follower_count,
         audience_tier,
-        tags:               data.tags,
-        qualifications:     data.qualifications.filter(Boolean),
-        past_work:          data.past_work.filter(Boolean),
-        min_budget:         data.min_budget,
-        max_budget:         data.max_budget,
-        is_available:       data.is_available,
-        preferred_work_type: data.preferred_work_type,
-        avatar_url:         data.avatar_url,
-        location:           data.location,
-        bio:                data.bio,
-        website:            data.website ? (data.website.startsWith('http') ? data.website : 'https://' + data.website) : '',
-        role:               'creator',
+        tags: Array.isArray(data.tags)
+          ? data.tags.filter(Boolean)
+          : (data.tags ? data.tags.split(',').map(s => s.trim()).filter(Boolean) : []),
+        qualifications: Array.isArray(data.qualifications)
+          ? data.qualifications.filter(Boolean)
+          : (data.qualifications ? [data.qualifications] : []),
+        past_work: Array.isArray(data.past_work)
+          ? data.past_work.filter(Boolean)
+          : (data.past_work ? [data.past_work] : []),
+        min_budget:          data.min_budget,
+        max_budget:          data.max_budget,
+        is_available:        data.is_available,
+        preferred_work_type: Array.isArray(data.preferred_work_type)
+                               ? data.preferred_work_type[0] || ''
+                               : data.preferred_work_type || '',
+        avatar_url:          data.avatar_url,
+        location:            data.location,
+        bio:                 data.bio,
+        website:             data.website
+                               ? (data.website.startsWith('http') ? data.website : 'https://' + data.website)
+                               : '',
         onboarding_complete: true,
       };
 
-      // Save to backend
       await api.patch('/creators/profile', payload);
-
-      // Update auth context (replaces manual localStorage update)
-      updateUser(payload);
 
       clear();
       setDone(true);
+      updateUser({ onboarding_complete: true, display_name: payload.display_name });
       setTimeout(() => navigate('/dashboard/creator', { replace: true }), 2000);
+
     } catch (err) {
       console.error('Onboarding save failed:', err);
-      // Navigate anyway so the user isn't stuck
-      clear();
-      navigate('/dashboard/creator', { replace: true });
+      setDone(true);
+      setTimeout(() => navigate('/dashboard/creator', { replace: true }), 1500);
     } finally {
       setLoading(false);
     }
