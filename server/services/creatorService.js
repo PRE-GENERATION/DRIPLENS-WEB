@@ -141,6 +141,24 @@ export const updateProfile = async (userId, fields) => {
     }
   }
 
+  // Serialize platform_urls as JSON string for JSONB column
+  if (sanitized.platform_urls !== undefined && sanitized.platform_urls !== null) {
+    if (typeof sanitized.platform_urls === 'object' && !Array.isArray(sanitized.platform_urls)) {
+      sanitized.platform_urls = JSON.stringify(sanitized.platform_urls);
+    }
+  }
+
+  // preferred_work_type: ensure it's a non-null string
+  if (sanitized.preferred_work_type !== undefined) {
+    if (Array.isArray(sanitized.preferred_work_type)) {
+      sanitized.preferred_work_type = sanitized.preferred_work_type[0] || '';
+    }
+    sanitized.preferred_work_type = String(sanitized.preferred_work_type || '');
+  }
+
+  // Add updated_at timestamp
+  sanitized.updated_at = new Date().toISOString();
+
   // Remove undefined values
   Object.keys(sanitized).forEach(k => sanitized[k] === undefined && delete sanitized[k]);
 

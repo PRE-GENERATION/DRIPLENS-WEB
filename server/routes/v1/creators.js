@@ -3,9 +3,6 @@ import { validate } from '../../middleware/validate.js';
 import { requireAuth, requireRole } from '../../middleware/auth.js';
 import { apiLimiter } from '../../middleware/rateLimiter.js';
 import { listCreatorsSchema, updateCreatorProfileSchema } from '../../schemas/creatorSchemas.js';
-import { supabase } from '../../utils/supabase.js';
-import { AppError } from '../../utils/AppError.js';
-
 import * as creatorService from '../../services/creatorService.js';
 
 const router = Router();
@@ -27,28 +24,10 @@ router.get('/:id', apiLimiter, async (req, res, next) => {
 
 router.patch('/profile', requireAuth, validate(updateCreatorProfileSchema), async (req, res, next) => {
   try {
-    const userId = req.user.id;
-    const updates = req.body;
-
-    // Handle platform_urls — store as JSONB
-    const dbPayload = {
-      ...updates,
-      platform_urls: updates.platform_urls ? JSON.stringify(updates.platform_urls) : undefined,
-      updated_at: new Date().toISOString(),
-    };
-
-    // Remove undefined keys
-    Object.keys(dbPayload).forEach(k => dbPayload[k] === undefined && delete dbPayload[k]);
-
-    const { error } = await supabase
-      .from('profiles')
-      .update(dbPayload)
-      .eq('id', userId);
-
-    if (error) throw new AppError(error.message, 500, 'DB_ERROR');
-
-    res.json({ success: true, message: 'Profile updated' });
+    const profile = await creatorService.updateProfile(req.user.id, req.body);
+    res.json({ success: true, data: { profile } });
   } catch (err) {
+    console.error('PATCH /profile error:', err.message, err.details, err.hint);
     next(err);
   }
 });

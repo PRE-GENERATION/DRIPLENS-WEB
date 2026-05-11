@@ -692,6 +692,7 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [apiError, setApiError] = useState('');
   
   useEffect(() => {
     if (user?.onboarding_complete && !done) {
@@ -756,8 +757,9 @@ export default function OnboardingPage() {
 
     } catch (err) {
       console.error('Onboarding save failed:', err);
-      setDone(true);
-      setTimeout(() => navigate('/dashboard/creator', { replace: true }), 1500);
+      setApiError(err?.message || 'Failed to save. Please try again.');
+      setLoading(false);
+      return;
     } finally {
       setLoading(false);
     }
@@ -809,6 +811,12 @@ export default function OnboardingPage() {
           background: '#fff',
           boxShadow: '0 4px 24px rgba(0,0,0,0.05)',
         }}>
+          {apiError && (
+            <div style={{ color: 'red', fontFamily: 'Poppins', fontSize: 13, marginBottom: 12, padding: '10px 14px', border: '1px solid red', borderRadius: 4 }}>
+              {apiError}
+            </div>
+          )}
+
           {done ? (
             <Celebration />
           ) : (
