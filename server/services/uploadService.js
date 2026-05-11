@@ -284,7 +284,7 @@ export const listPortfolioProjects = async (userId) => {
   return data || [];
 };
 
-export const getPortfolioProject = async (projectId, userId) => {
+export const getPortfolioProject = async (projectId, _userId) => {
   const { data: project, error: projErr } = await supabase
     .from('portfolio_projects')
     .select('*, items:portfolio_items(*)')

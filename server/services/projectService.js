@@ -212,7 +212,7 @@ export const listProjects = async (userId) => {
  * Called by: PATCH /api/v1/projects/:id/progress
  * Role: creator
  */
-export const updateProgress = async (projectId, userId, { progress, note }) => {
+export const updateProgress = async (projectId, userId, { progress, _note }) => {
   const project = await assertParty(projectId, userId);
 
   if (project.creator_id !== userId) {

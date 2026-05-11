@@ -24,7 +24,7 @@ router.post('/', requireAuth, requireRole('brand'), async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     res.status(201).json({ request: data });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error creating request' });
   }
 });
@@ -47,7 +47,7 @@ router.get('/', requireAuth, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     res.json({ requests: data });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error fetching requests' });
   }
 });
@@ -73,7 +73,7 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     res.json({ request: data });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error updating status' });
   }
 });

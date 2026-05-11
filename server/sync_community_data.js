@@ -47,7 +47,7 @@ async function syncPexelsToDb() {
       created_at: new Date().toISOString()
     }));
 
-    const { data: inserted, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('portfolio_items')
       .upsert(itemsToInsert, { onConflict: 'storage_path' });
 

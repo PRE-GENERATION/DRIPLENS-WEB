@@ -5,7 +5,7 @@ import logger from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 
-const isLocalAuth = env.SUPABASE_URL.includes('dummy');
+const _isLocalAuth = env.SUPABASE_URL.includes('dummy');
 const USERS_FILE = path.join(process.cwd(), 'users.json');
 
 const readUsers = () => {

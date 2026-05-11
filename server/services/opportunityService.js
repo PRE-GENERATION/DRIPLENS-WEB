@@ -8,7 +8,6 @@ import { supabase } from '../utils/supabase.js';
 import { emitToUser } from '../utils/socket.js';
 import logger from '../utils/logger.js';
 import {
-  badRequest,
   forbidden,
   notFound,
   conflict,
