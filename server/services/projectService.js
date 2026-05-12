@@ -35,10 +35,12 @@ const assertParty = async (projectId, userId) => {
       id, brand_id, creator_id, status, progress,
       escrow_amount_paise, package_title, package_price_str,
       stripe_payment_intent_id, stripe_transfer_id, deadline,
+      revision_count, max_revisions, dispute_reason, disputed_at, disputed_by,
+      usage_rights_summary,
       created_at, updated_at,
-      brand:brand_id     (id, username, avatar_url),
+      brand:brand_id     (id, username, avatar_url, gst_number, company_name),
       creator:creator_id (id, username, avatar_url),
-      hiring_request:hiring_request_id (id, project_title, project_description)
+      hiring_request:hiring_request_id (id, project_title, project_description, opportunity_id)
     `)
     .eq('id', projectId)
     .single();
@@ -110,7 +112,12 @@ export const createProject = async ({
   // Verify the hiring request exists and belongs to the brand
   const { data: hr, error: hrErr } = await supabase
     .from('hiring_requests')
-    .select('id, brand_id, creator_id, status')
+    .select(`
+      id, brand_id, creator_id, status,
+      opportunity:opportunity_id (
+        id, num_revisions, usage_rights, usage_rights_details
+      )
+    `)
     .eq('id', hiring_request_id)
     .single();
 
@@ -137,6 +144,9 @@ export const createProject = async ({
     escrow_amount_paise,
     ...(stripe_payment_intent_id && { stripe_payment_intent_id }),
     ...(deadline && { deadline }),
+    // Pull max revisions from opportunity if available
+    max_revisions: hr.opportunity?.num_revisions ?? 1,
+    usage_rights_summary: hr.opportunity?.usage_rights_details ?? (hr.opportunity?.usage_rights ? 'Platform Standard' : 'None'),
   };
 
   const { data: project, error } = await supabase
@@ -250,7 +260,7 @@ export const updateProgress = async (projectId, userId, { progress, _note }) => 
 export const submitDeliverable = async (
   projectId,
   userId,
-  { file_url, file_name, file_size, mime_type, storage_path, notes },
+  { file_url, file_name, file_size, mime_type, storage_path, notes, type = 'draft' },
 ) => {
   const project = await assertParty(projectId, userId);
 
@@ -273,6 +283,7 @@ export const submitDeliverable = async (
       mime_type:    mime_type    ?? null,
       storage_path: storage_path ?? null,
       notes:        notes        ?? null,
+      type:         type         ?? 'draft',
     })
     .select()
     .single();
@@ -360,6 +371,12 @@ export const requestRevision = async (
 
   if (revErr) throw revErr;
 
+  // Increment revision count on project
+  await supabase
+    .from('projects')
+    .update({ revision_count: (project.revision_count || 0) + 1 })
+    .eq('id', projectId);
+
   // Update project status → revision_requested
   const { data: updatedProject, error: projErr } = await supabase
     .from('projects')
@@ -429,6 +446,42 @@ export const approveProject = async (projectId, userId) => {
   });
 
   logger.info('Project approved & payment released', { projectId, userId });
+  return updatedProject;
+};
+
+
+/**
+ * Raise a dispute for a project.
+ * Changes project status → 'disputed'.
+ * Called by: POST /api/v1/projects/:id/dispute
+ */
+export const raiseDispute = async (projectId, userId, { reason }) => {
+  const project = await assertParty(projectId, userId);
+
+  if (['completed', 'cancelled'].includes(project.status)) {
+    throw badRequest(`Cannot dispute a project that is already "${project.status}"`);
+  }
+
+  const { data: updatedProject, error } = await supabase
+    .from('projects')
+    .update({ 
+      status: 'disputed',
+      dispute_reason: reason,
+      disputed_at: new Date().toISOString(),
+      disputed_by: userId
+    })
+    .eq('id', projectId)
+    .select(`
+      *, 
+      brand:brand_id     (id, username, avatar_url),
+      creator:creator_id (id, username, avatar_url)
+    `)
+    .single();
+
+  if (error) throw error;
+
+  broadcastProjectUpdate(updatedProject, userId, 'project_disputed');
+  logger.warn('Project disputed', { projectId, userId, reason });
   return updatedProject;
 };
 

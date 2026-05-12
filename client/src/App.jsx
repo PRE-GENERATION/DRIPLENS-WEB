@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ClickSpark from './components/ClickSpark';
 import ScrollToTop from './components/ScrollToTop';
+import DashboardNav from './components/DashboardNav';
 
 
 // Pages
@@ -28,6 +29,7 @@ import DirectMessagePage from './pages/DirectMessagePage';
 import CheckoutPage from './pages/CheckoutPage';
 import ProjectProgressPage from './pages/ProjectProgressPage';
 import EditProfilePage from './pages/EditProfilePage';
+import SettingsPage from './pages/SettingsPage';
 import BrandVerificationPage from './pages/BrandVerificationPage';
 import CreateOpportunityPage from './pages/CreateOpportunityPage';
 import OpportunitiesPage from './pages/OpportunitiesPage';
@@ -71,17 +73,35 @@ function ProfileMeRedirect() {
   return <Navigate to={targetPath} replace />;
 }
 
+/** Redirects /dashboard → /dashboard/creator or /dashboard/brand based on role */
+function DashboardRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" /></div>;
+  if (!user) return <Navigate to="/auth" replace />;
+  
+  const targetPath = user.role === 'brand' ? '/dashboard/brand' : '/dashboard/creator';
+  return <Navigate to={targetPath} replace />;
+}
+
 const AppContent = () => {
   const location = useLocation();
   const isDriplens = location.pathname.startsWith('/driplens');
   const isDM = location.pathname.startsWith('/dm');
   const isAuth = location.pathname.startsWith('/auth');
-  const hasSidebar = ['/dashboard', '/earnings'].includes(location.pathname);
+  const isDashboard = location.pathname.startsWith('/dashboard') || 
+                      location.pathname === '/earnings' || 
+                      location.pathname === '/messages' || 
+                      location.pathname.startsWith('/onboarding') ||
+                      location.pathname.startsWith('/verify') ||
+                      location.pathname === '/opportunities/new' ||
+                      isDM;
+
+  const showNavbar = !isDashboard;
 
   return (
     <div className={isDriplens ? "bg-[#050508] min-h-screen text-white" : "min-h-screen flex flex-col bg-[var(--color-brand-bg)] text-[var(--color-brand-body)]"}>
-      {!isDriplens && !isAuth && !hasSidebar && <Navbar />}
-      <main className="flex-grow">
+      {showNavbar ? <Navbar /> : <DashboardNav />}
+      <main className="flex-grow pt-24 md:pt-32">
         <Routes>
           {/* Driplens Landing */}
           <Route path="/driplens" element={<DriplensLanding />} />
@@ -128,8 +148,9 @@ const AppContent = () => {
           <Route path="/progress" element={<ProjectProgressPage />} />
           <Route path="/progress/:projectId" element={<ProjectProgressPage />} />
           
-          <Route path="/profile/edit" element={
-            <ProtectedRoute><EditProfilePage /></ProtectedRoute>
+          <Route path="/profile/edit" element={<Navigate to="/settings" replace />} />
+          <Route path="/settings" element={
+            <ProtectedRoute><SettingsPage /></ProtectedRoute>
           } />
           <Route path="/messages" element={
             <ProtectedRoute><MessagingPage /></ProtectedRoute>
@@ -143,7 +164,7 @@ const AppContent = () => {
             <ProtectedRoute requiredRole="creator"><UploadPage /></ProtectedRoute>
           } />
           <Route path="/dashboard" element={
-            <ProtectedRoute requiredRole="creator"><DashboardPage /></ProtectedRoute>
+            <ProtectedRoute><DashboardRedirect /></ProtectedRoute>
           } />
           <Route path="/dashboard/creator" element={
             <ProtectedRoute requiredRole="creator"><CreatorDashboard /></ProtectedRoute>
@@ -168,7 +189,7 @@ const AppContent = () => {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
-      {!isDriplens && !isDM && !isAuth && <Footer />}
+      {!isDriplens && !isDM && !isAuth && !isDashboard && <Footer />}
     </div>
   );
 };

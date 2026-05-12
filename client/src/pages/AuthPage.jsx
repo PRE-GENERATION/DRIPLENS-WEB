@@ -293,10 +293,11 @@ export default function AuthPage() {
       if (mode === 'register') {
         let userData;
         if (selectedRole === 'brand') {
-          const derivedUsername = formData.brandName
-            .toLowerCase()
-            .replace(/[^a-z0-9_.]/g, '_')
-            .slice(0, 30);
+          const baseName = formData.brandName 
+            ? formData.brandName.toLowerCase().replace(/[^a-z0-9_.]/g, '_') 
+            : formData.email.split('@')[0].replace(/[^a-z0-9_.]/g, '_');
+          const randomSuffix = Math.random().toString(36).substring(2, 6);
+          const derivedUsername = `${baseName}_${randomSuffix}`.slice(0, 30);
           
           userData = await register(derivedUsername, formData.email, formData.password, 'brand', {
             brand_name:       formData.brandName,
@@ -306,7 +307,9 @@ export default function AuthPage() {
             phone_number:     formData.phoneNumber,
           });
         } else {
-          const derivedUsername = formData.email.split('@')[0];
+          const baseName = formData.email.split('@')[0].replace(/[^a-z0-9_.]/g, '_');
+          const randomSuffix = Math.random().toString(36).substring(2, 6);
+          const derivedUsername = `${baseName}_${randomSuffix}`.slice(0, 30);
           userData = await register(derivedUsername, formData.email, formData.password, 'creator');
         }
 
@@ -351,7 +354,7 @@ export default function AuthPage() {
         <div className="absolute inset-0 opacity-10 pointer-events-none" 
              style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         
-        <Link to="/" className="text-2xl font-black tracking-tighter relative z-10">DRIPLENS</Link>
+        <Link to="/" className="text-2xl font-black tracking-tighter relative z-10 text-white">DRIPLENS</Link>
         
         <div className="relative z-10">
           <motion.div
@@ -359,12 +362,12 @@ export default function AuthPage() {
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-6xl md:text-8xl font-black leading-none mb-4">
+            <h1 className="text-6xl md:text-8xl font-black leading-none mb-4 text-white">
               THE<br />
               <span className="text-transparent" style={{ WebkitTextStroke: '2px white' }}>ELITE</span><br />
               CLUB
             </h1>
-            <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-60">Professional Creator Network</p>
+            <p className="text-xs uppercase tracking-[0.3em] font-bold opacity-60 text-white">Professional Creator Network</p>
           </motion.div>
         </div>
 

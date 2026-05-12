@@ -7,6 +7,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MessagingPage() {
   const { user: currentUser } = useAuth();
+  const [reqs, setReqs] = useState([
+    { id: '1', project_title: 'Summer Collection Reel', last_message: 'Hey, when can we expect the first draft?', unread_count: 2, brand: { username: 'Urban Threads', avatar_url: 'https://i.pravatar.cc/150?u=1' } },
+    { id: '2', project_title: 'Tech Unboxing Series', last_message: 'The lighting looks great in the preview.', unread_count: 0, brand: { username: 'GadgetHub', avatar_url: 'https://i.pravatar.cc/150?u=2' } },
+    { id: '3', project_title: 'Fitness App Promo', last_message: 'Can we change the background music?', unread_count: 5, brand: { username: 'FitLife', avatar_url: 'https://i.pravatar.cc/150?u=3' } },
+    { id: '4', project_title: 'Travel Vlog Collaboration', last_message: 'Safe travels! Looking forward to the footage.', unread_count: 1, brand: { username: 'Wanderlust', avatar_url: 'https://i.pravatar.cc/150?u=4' } },
+    { id: '5', project_title: 'Eco-Friendly Kitchenware', last_message: 'Thanks for the honest review.', unread_count: 0, brand: { username: 'GreenHome', avatar_url: 'https://i.pravatar.cc/150?u=5' } },
+    { id: '6', project_title: 'Gaming Setup Showcase', last_message: 'The RGB sync is perfect.', unread_count: 3, brand: { username: 'GamerGear', avatar_url: 'https://i.pravatar.cc/150?u=6' } },
+    { id: '7', project_title: 'Skincare Routine Video', last_message: 'Please emphasize the natural ingredients.', unread_count: 0, brand: { username: 'PureGlow', avatar_url: 'https://i.pravatar.cc/150?u=7' } },
+    { id: '8', project_title: 'Smart Home Automation', last_message: 'Does the app support iOS 17?', unread_count: 4, brand: { username: 'SmartLiving', avatar_url: 'https://i.pravatar.cc/150?u=8' } },
+    { id: '9', project_title: 'Organic Pet Food Intro', last_message: 'Our dogs loved the samples!', unread_count: 0, brand: { username: 'PawPal', avatar_url: 'https://i.pravatar.cc/150?u=9' } },
+    { id: '10', project_title: 'Luxury Watch Shoot', last_message: 'The macro shots are stunning.', unread_count: 1, brand: { username: 'EliteTime', avatar_url: 'https://i.pravatar.cc/150?u=10' } }
+  ]);
   const socket = useSocket();
 
   const [requests,        setRequests]        = useState([]);
@@ -33,7 +45,21 @@ export default function MessagingPage() {
     const load = async () => {
       try {
         const data = await api.get('/hiring');
-        const reqs = data.data?.requests ?? [];
+        let reqs = data.data?.requests ?? [];
+        if (reqs.length === 0) {
+          reqs = [
+            { id: 'mock-req-1', project_title: 'Summer Collection Launch', unread_count: 2, creator: { id: 'cr1', username: 'alex_creates', avatar_url: 'https://i.pravatar.cc/150?u=1' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-2', project_title: 'Winter Essentials 2024', unread_count: 0, creator: { id: 'cr2', username: 'samantha_vlogs', avatar_url: 'https://i.pravatar.cc/150?u=2' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-3', project_title: 'Fitness App Review', unread_count: 1, creator: { id: 'cr3', username: 'pro_studio_gear', avatar_url: 'https://i.pravatar.cc/150?u=3' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-4', project_title: 'Eco-friendly Kitchenware', unread_count: 0, creator: { id: 'cr4', username: 'fitness_freak_99', avatar_url: 'https://i.pravatar.cc/150?u=4' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-5', project_title: 'Gaming Setup Vlog', unread_count: 5, creator: { id: 'cr5', username: 'tech_guru_official', avatar_url: 'https://i.pravatar.cc/150?u=5' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-6', project_title: 'Skincare Routine Post', unread_count: 0, creator: { id: 'cr6', username: 'eco_warrior_jane', avatar_url: 'https://i.pravatar.cc/150?u=6' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-7', project_title: 'Travel Diary: Bali', unread_count: 0, creator: { id: 'cr7', username: 'travel_with_tom', avatar_url: 'https://i.pravatar.cc/150?u=7' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-8', project_title: 'Tech Showcase', unread_count: 3, creator: { id: 'cr8', username: 'beauty_by_bella', avatar_url: 'https://i.pravatar.cc/150?u=8' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-9', project_title: 'Home Makeover', unread_count: 0, creator: { id: 'cr9', username: 'gamer_pro_max', avatar_url: 'https://i.pravatar.cc/150?u=9' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } },
+            { id: 'mock-req-10', project_title: 'Pet Food Review', unread_count: 1, creator: { id: 'cr10', username: 'chef_de_cuisine', avatar_url: 'https://i.pravatar.cc/150?u=10' }, brand: { id: 'b1', username: 'My Brand', avatar_url: '' } }
+          ];
+        }
         setRequests(reqs);
         if (reqs.length > 0 && !activeRequestId) {
           // Don't auto-select on mobile maybe? Actually, spec says "When no conversation selected"
@@ -51,6 +77,14 @@ export default function MessagingPage() {
 
     const load = async () => {
       try {
+        if (activeRequestId.startsWith('mock-req-')) {
+          setMessages([
+            { id: 'm1', content: 'Hey, I love the brief for the Summer Campaign!', sender_id: 'c1', created_at: new Date(Date.now() - 3600000).toISOString() },
+            { id: 'm2', content: 'Are you open to video reels instead of just stories?', sender_id: 'c1', created_at: new Date(Date.now() - 3500000).toISOString() },
+            { id: 'm3', content: 'Hi Alex! Yes, reels would be fantastic. Let us discuss the budget.', sender_id: currentUser?.id, created_at: new Date(Date.now() - 3000000).toISOString() },
+          ]);
+          return;
+        }
         const data = await api.get(`/messages/${activeRequestId}`);
         setMessages(data.data?.messages ?? []);
         
@@ -138,6 +172,10 @@ export default function MessagingPage() {
     }
 
     try {
+      if (activeRequestId.startsWith('mock-req-')) {
+        setMessages(prev => [...prev, { id: 'm_mock_new_' + Date.now(), content, sender_id: currentUser?.id, created_at: new Date().toISOString() }]);
+        return;
+      }
       const res = await api.post(`/messages/${activeRequestId}`, { content });
       setMessages(prev => [...prev, res.data.message]);
     } catch (err) {
@@ -190,7 +228,7 @@ export default function MessagingPage() {
   const isOnline   = otherParty && presence[otherParty.id] === 'online';
 
   return (
-    <div style={{ height: 'calc(100vh - 64px)', display: 'flex', background: '#FFF', overflow: 'hidden', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ height: '100%', display: 'flex', background: '#FFF', overflow: 'hidden', fontFamily: 'Inter, sans-serif' }}>
       <Helmet><title>Messages — Driplens</title></Helmet>
 
       {/* ── Left Sidebar ────────────────────────────────────────────────────── */}

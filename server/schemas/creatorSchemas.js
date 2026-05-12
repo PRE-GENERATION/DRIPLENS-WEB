@@ -40,6 +40,10 @@ export const updateCreatorProfileSchema = z.object({
   past_work:           z.array(z.string()).optional(),
   preferred_work_type: z.string().optional(),
   onboarding_complete: z.boolean().optional(),
+  is_verified:         z.boolean().optional(),
+  gst_number:          z.string().max(20).optional(),
+  company_name:        z.string().max(150).optional(),
+  company_proof_url:   z.string().optional(),
   role:                z.string().optional(),
 });
 

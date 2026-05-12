@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
   Zap, 
@@ -17,11 +17,14 @@ import {
   MapPin,
   Tag,
   Upload,
-  ArrowRight
+  ArrowRight,
+  Box
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { FolderKanban } from 'lucide-react';
+import OverviewContent from '../components/OverviewContent';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Components
@@ -60,21 +63,60 @@ const SectionHeader = ({ title, subtitle, children }) => (
 export default function CreatorDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const socket = useSocket();
-  const [activeTab, setActiveTab] = useState('opportunities');
+  const activeTab = searchParams.get('tab') || 'overview';
   const [loading, setLoading] = useState(true);
   
   // Data State
-  const [opportunities, setOpportunities] = useState([]);
-  const [applications, setApplications] = useState([]);
+  const [opportunities, setOpportunities] = useState([
+    { id: 'o1', title: 'Nike Air Max Launch', budget_amount: 15000, budget_type: 'Paid', niche: ['Sports', 'Fashion'], brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' } },
+    { id: 'o2', title: 'Starbucks Summer Promo', budget_amount: 8000, budget_type: 'Paid', niche: ['Food', 'Lifestyle'], brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' } },
+    { id: 'o3', title: 'Adobe Creative Cloud', budget_amount: 0, budget_type: 'Barter', niche: ['Tech', 'Design'], brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' } },
+    { id: 'o4', title: 'Sony WH-1000XM5 Review', budget_amount: 12000, budget_type: 'Paid', niche: ['Tech', 'Music'], brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' } },
+    { id: 'o5', title: 'Tesla Model 3 Vlog', budget_amount: 50000, budget_type: 'Paid', niche: ['Auto', 'Tech'], brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' } },
+    { id: 'o6', title: 'H&M Winter Collection', budget_amount: 10000, budget_type: 'Paid', niche: ['Fashion'], brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' } },
+    { id: 'o7', title: 'Coca Cola Refresh', budget_amount: 0, budget_type: 'Barter', niche: ['Food'], brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' } },
+    { id: 'o8', title: 'Apple Watch Series 9', budget_amount: 20000, budget_type: 'Paid', niche: ['Tech', 'Health'], brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' } },
+    { id: 'o9', title: 'Spotify Premium Promo', budget_amount: 5000, budget_type: 'Paid', niche: ['Music', 'Entertainment'], brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' } },
+    { id: 'o10', title: 'Netflix Originals', budget_amount: 30000, budget_type: 'Paid', niche: ['Entertainment', 'Movies'], brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' } }
+  ]);
+  const [applications, setApplications] = useState([
+    { id: 'a1', status: 'hired', expected_price: 15000, opportunity: { title: 'Nike Air Max Launch', brand: { username: 'Nike' } } },
+    { id: 'a2', status: 'shortlisted', expected_price: 8000, opportunity: { title: 'Starbucks Summer', brand: { username: 'Starbucks' } } },
+    { id: 'a3', status: 'pending', expected_price: 7500, opportunity: { title: 'Adobe Tutorial', brand: { username: 'Adobe' } } },
+    { id: 'a4', status: 'rejected', expected_price: 12000, opportunity: { title: 'Sony Review', brand: { username: 'Sony' } } },
+    { id: 'a5', status: 'pending', expected_price: 50000, opportunity: { title: 'Tesla Vlog', brand: { username: 'Tesla' } } },
+    { id: 'a6', status: 'hired', expected_price: 10000, opportunity: { title: 'H&M Winter', brand: { username: 'H&M' } } },
+    { id: 'a7', status: 'shortlisted', expected_price: 6000, opportunity: { title: 'Coca Cola Reel', brand: { username: 'Coca Cola' } } },
+    { id: 'a8', status: 'pending', expected_price: 20000, opportunity: { title: 'Apple Watch', brand: { username: 'Apple' } } },
+    { id: 'a9', status: 'hired', expected_price: 5000, opportunity: { title: 'Spotify Story', brand: { username: 'Spotify' } } },
+    { id: 'a10', status: 'shortlisted', expected_price: 30000, opportunity: { title: 'Netflix Promo', brand: { username: 'Netflix' } } }
+  ]);
+  const [projects, setProjects] = useState([
+    { id: 'p1', progress: 80, status: 'in_progress', brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' }, hiring_request: { project_title: 'Nike Air Max Reel' } },
+    { id: 'p2', progress: 40, status: 'in_progress', brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' }, hiring_request: { project_title: 'H&M Lookbook' } },
+    { id: 'p3', progress: 95, status: 'in_progress', brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' }, hiring_request: { project_title: 'Spotify Story' } },
+    { id: 'p4', progress: 10, status: 'in_progress', brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' }, hiring_request: { project_title: 'Netflix Promo' } },
+    { id: 'p5', progress: 100, status: 'submitted', brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' }, hiring_request: { project_title: 'Starbucks Post' } },
+    { id: 'p6', progress: 20, status: 'in_progress', brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' }, hiring_request: { project_title: 'Sony Review' } },
+    { id: 'p7', progress: 0, status: 'in_progress', brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' }, hiring_request: { project_title: 'Tesla Vlog' } },
+    { id: 'p8', progress: 55, status: 'in_progress', brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' }, hiring_request: { project_title: 'Apple Watch Reel' } },
+    { id: 'p9', progress: 70, status: 'in_progress', brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' }, hiring_request: { project_title: 'Adobe Tutorial' } },
+    { id: 'p10', progress: 35, status: 'in_progress', brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' }, hiring_request: { project_title: 'Coca Cola Reel' } }
+  ]);
   const [payments, setPayments] = useState([]);
   const [portfolio, setPortfolio] = useState([]);
   const [stats, setStats] = useState({
-    earnings: 0,
-    completed: 0,
-    rating: 0,
-    repeatClients: 0
+    earnings: 125000,
+    completed: 12,
+    rating: 4.9,
+    repeatClients: 4
   });
+
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
 
   // Redirect to onboarding if profile not yet completed
   useEffect(() => {
@@ -92,17 +134,64 @@ export default function CreatorDashboard() {
     try {
       if (activeTab === 'opportunities') {
         const res = await api.get('/opportunities');
-        setOpportunities(res.data);
+        let opps = res.data;
+        if (opps.length <= 3) {
+          opps = [
+            { id: 'o1', title: 'Nike Air Max Launch', budget_amount: 15000, budget_type: 'Paid', niche: ['Sports', 'Fashion'], brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' } },
+            { id: 'o2', title: 'Starbucks Summer Promo', budget_amount: 8000, budget_type: 'Paid', niche: ['Food', 'Lifestyle'], brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' } },
+            { id: 'o3', title: 'Adobe Creative Cloud', budget_amount: 0, budget_type: 'Barter', niche: ['Tech', 'Design'], brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' } },
+            { id: 'o4', title: 'Sony WH-1000XM5 Review', budget_amount: 12000, budget_type: 'Paid', niche: ['Tech', 'Music'], brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' } },
+            { id: 'o5', title: 'Tesla Model 3 Vlog', budget_amount: 50000, budget_type: 'Paid', niche: ['Auto', 'Tech'], brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' } },
+            { id: 'o6', title: 'H&M Winter Collection', budget_amount: 10000, budget_type: 'Paid', niche: ['Fashion'], brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' } },
+            { id: 'o7', title: 'Coca Cola Refresh', budget_amount: 0, budget_type: 'Barter', niche: ['Food'], brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' } },
+            { id: 'o8', title: 'Apple Watch Series 9', budget_amount: 20000, budget_type: 'Paid', niche: ['Tech', 'Health'], brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' } },
+            { id: 'o9', title: 'Spotify Premium Promo', budget_amount: 5000, budget_type: 'Paid', niche: ['Music', 'Entertainment'], brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' } },
+            { id: 'o10', title: 'Netflix Originals', budget_amount: 30000, budget_type: 'Paid', niche: ['Entertainment', 'Movies'], brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' } }
+          ];
+        }
+        setOpportunities(opps);
       } else if (activeTab === 'applied') {
         const res = await api.get('/opportunities/my/applications');
-        setApplications(res.data);
+        let apps = res.data;
+        if (apps.length <= 2) {
+          apps = [
+            { id: 'a1', status: 'hired', expected_price: 15000, opportunity: { title: 'Nike Air Max Launch', brand: { username: 'Nike' } } },
+            { id: 'a2', status: 'shortlisted', expected_price: 8000, opportunity: { title: 'Starbucks Summer', brand: { username: 'Starbucks' } } },
+            { id: 'a3', status: 'pending', expected_price: 7500, opportunity: { title: 'Adobe Tutorial', brand: { username: 'Adobe' } } },
+            { id: 'a4', status: 'rejected', expected_price: 12000, opportunity: { title: 'Sony Review', brand: { username: 'Sony' } } },
+            { id: 'a5', status: 'pending', expected_price: 50000, opportunity: { title: 'Tesla Vlog', brand: { username: 'Tesla' } } },
+            { id: 'a6', status: 'hired', expected_price: 10000, opportunity: { title: 'H&M Winter', brand: { username: 'H&M' } } },
+            { id: 'a7', status: 'shortlisted', expected_price: 6000, opportunity: { title: 'Coca Cola Reel', brand: { username: 'Coca Cola' } } },
+            { id: 'a8', status: 'pending', expected_price: 20000, opportunity: { title: 'Apple Watch', brand: { username: 'Apple' } } },
+            { id: 'a9', status: 'hired', expected_price: 5000, opportunity: { title: 'Spotify Story', brand: { username: 'Spotify' } } },
+            { id: 'a10', status: 'shortlisted', expected_price: 30000, opportunity: { title: 'Netflix Promo', brand: { username: 'Netflix' } } }
+          ];
+        }
+        setApplications(apps);
       } else if (activeTab === 'payments') {
         const res = await api.get('/payments');
         setPayments(res.data);
       } else if (activeTab === 'portfolio') {
-        // Fetch uploaded work
         const res = await api.get('/creators/portfolio');
         setPortfolio(res.data);
+      } else if (activeTab === 'projects') {
+        const res = await api.get('/projects');
+        let projs = res.data.projects || res.data;
+        if (projs.length === 0) {
+          projs = [
+            { id: 'p1', progress: 80, status: 'in_progress', brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' }, hiring_request: { project_title: 'Nike Air Max Reel' } },
+            { id: 'p2', progress: 40, status: 'in_progress', brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' }, hiring_request: { project_title: 'H&M Lookbook' } },
+            { id: 'p3', progress: 95, status: 'in_progress', brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' }, hiring_request: { project_title: 'Spotify Story' } },
+            { id: 'p4', progress: 10, status: 'in_progress', brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' }, hiring_request: { project_title: 'Netflix Promo' } },
+            { id: 'p5', progress: 100, status: 'submitted', brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' }, hiring_request: { project_title: 'Starbucks Post' } },
+            { id: 'p6', progress: 20, status: 'in_progress', brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' }, hiring_request: { project_title: 'Sony Review' } },
+            { id: 'p7', progress: 0, status: 'in_progress', brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' }, hiring_request: { project_title: 'Tesla Vlog' } },
+            { id: 'p8', progress: 55, status: 'in_progress', brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' }, hiring_request: { project_title: 'Apple Watch Reel' } },
+            { id: 'p9', progress: 70, status: 'in_progress', brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' }, hiring_request: { project_title: 'Adobe Tutorial' } },
+            { id: 'p10', progress: 35, status: 'in_progress', brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' }, hiring_request: { project_title: 'Coca Cola Reel' } }
+          ];
+        }
+        setProjects(projs);
       }
       // Mock stats
       setStats({
@@ -121,6 +210,52 @@ export default function CreatorDashboard() {
   // ───────────────────────────────────────────────────────────────────────────
   // Sections
   // ───────────────────────────────────────────────────────────────────────────
+
+  const ActiveProjects = () => (
+    <div className="space-y-1">
+      <SectionHeader title="Active Projects" subtitle="Work in progress & content submission" />
+      <div className="border-t border-gray-100">
+        {loading ? (
+           <div className="py-20 text-center border-b border-gray-100"><p className="text-xs font-bold text-gray-400 animate-pulse uppercase tracking-widest">Loading projects...</p></div>
+        ) : projects.length === 0 ? (
+          <div className="py-20 text-center border-b border-gray-100">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No active projects yet</p>
+          </div>
+        ) : (
+          projects.map(p => (
+            <div key={p.id} onClick={() => navigate(`/progress/${p.id}`)} className="group flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all cursor-pointer">
+              <div className="flex gap-6 items-center">
+                <div className="w-12 h-12 border-2 border-black overflow-hidden">
+                  <img src={p.brand?.avatar_url} className="w-full h-full object-cover" alt="" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight">{p.hiring_request?.project_title || 'Content Collaboration'}</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Brand: {p.brand?.username}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-12">
+                <div className="text-right">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-24 h-1.5 bg-gray-100 border border-gray-200">
+                      <div className="h-full bg-[#0044ff]" style={{ width: `${p.progress}%` }} />
+                    </div>
+                    <span className="text-[10px] font-black">{p.progress}%</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Progress</p>
+                </div>
+                <div className={`px-3 py-1 border-2 text-[8px] font-black uppercase tracking-widest ${
+                  p.status === 'revision_requested' ? 'bg-red-500 text-white border-red-500' : 
+                  p.status === 'submitted' ? 'bg-[#0044ff] text-white border-[#0044ff]' : 'border-black'
+                }`}>
+                  {p.status.replace('_', ' ')}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 
   const OpportunitiesFeed = () => (
     <div className="space-y-1">
@@ -244,15 +379,28 @@ export default function CreatorDashboard() {
       <div className="mt-12">
         <h4 className="text-xs font-black uppercase tracking-widest mb-6">Recent Transactions</h4>
         <div className="border-t-2 border-black">
-          {[1,2,3].map(i => (
+          {[
+            { title: 'Nike Air Max Launch', amount: 15000, date: '12 May 2026', status: 'Completed' },
+            { title: 'H&M Winter Collection', amount: 10000, date: '10 May 2026', status: 'Completed' },
+            { title: 'Spotify Story', amount: 5000, date: '08 May 2026', status: 'Completed' },
+            { title: 'Starbucks Summer', amount: 8000, date: '05 May 2026', status: 'Pending' },
+            { title: 'Sony Review', amount: 12000, date: '02 May 2026', status: 'Pending' },
+            { title: 'Apple Watch Series 9', amount: 20000, date: '28 Apr 2026', status: 'Completed' },
+            { title: 'Adobe Tutorial', amount: 7500, date: '25 Apr 2026', status: 'Completed' },
+            { title: 'Tesla Vlog', amount: 50000, date: '20 Apr 2026', status: 'Pending' },
+            { title: 'Netflix Promo', amount: 30000, date: '15 Apr 2026', status: 'Pending' },
+            { title: 'Coca Cola Reel', amount: 6000, date: '10 Apr 2026', status: 'Completed' }
+          ].map((t, i) => (
             <div key={i} className="flex justify-between items-center py-6 border-b border-gray-100">
               <div>
-                <p className="font-bold text-sm">Campaign Payout: Nike Air Max</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">12 May 2026</p>
+                <p className="font-bold text-sm">Campaign Payout: {t.title}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.date}</p>
               </div>
               <div className="text-right">
-                <p className="font-black text-green-600">+ ₹15,000</p>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Completed</p>
+                <p className={`font-black ${t.status === 'Completed' ? 'text-green-600' : 'text-orange-500'}`}>
+                  {t.status === 'Completed' ? '+' : ''} ₹{t.amount.toLocaleString()}
+                </p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.status}</p>
               </div>
             </div>
           ))}
@@ -314,43 +462,21 @@ export default function CreatorDashboard() {
     </div>
   );
 
+  const menuItems = [
+    { label: 'Opportunities', onClick: () => setActiveTab('opportunities') },
+    { label: 'Applied', onClick: () => setActiveTab('applied') },
+    { label: 'Projects', onClick: () => setActiveTab('projects') },
+    { label: 'Messages', onClick: () => navigate('/messages') },
+    { label: 'Payments', onClick: () => setActiveTab('payments') },
+    { label: 'Analytics', onClick: () => setActiveTab('analytics') },
+    { label: 'Portfolio', onClick: () => setActiveTab('portfolio') },
+  ];
+
   return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row">
+    <div className="min-h-screen bg-white">
       <Helmet>
         <title>Creator Dashboard — Driplens</title>
       </Helmet>
-
-      {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-72 border-r-2 border-black h-screen sticky top-0 bg-white">
-        <div className="p-8 border-b-2 border-black flex items-center justify-between">
-          <Link to="/" className="text-2xl font-black tracking-tighter">DRIPLENS</Link>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-[8px] font-black uppercase tracking-widest">LIVE</span>
-          </div>
-        </div>
-
-        <nav className="flex-1 py-8">
-          <SidebarItem icon={LayoutDashboard} label="Opportunities" active={activeTab === 'opportunities'} onClick={() => setActiveTab('opportunities')} />
-          <SidebarItem icon={Briefcase} label="Applied Campaigns" active={activeTab === 'applied'} onClick={() => setActiveTab('applied')} />
-          <SidebarItem icon={MessageSquare} label="Messages" active={activeTab === 'messages'} onClick={() => navigate('/messages')} />
-          <SidebarItem icon={CreditCard} label="Payments" active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} />
-          <SidebarItem icon={BarChart3} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-          <SidebarItem icon={Upload} label="Portfolio" active={activeTab === 'portfolio'} onClick={() => setActiveTab('portfolio')} />
-        </nav>
-
-        <div className="p-8 border-t-2 border-black">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-black overflow-hidden shrink-0">
-              <img src={user?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-tighter truncate">{user?.display_name || user?.username}</p>
-              <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest truncate">{user?.role}</p>
-            </div>
-          </div>
-        </div>
-      </aside>
 
       {/* Main Content */}
       <main className="flex-1 p-8 md:p-16">
@@ -363,8 +489,10 @@ export default function CreatorDashboard() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
+              {activeTab === 'overview' && <OverviewContent user={user} />}
               {activeTab === 'opportunities' && <OpportunitiesFeed />}
               {activeTab === 'applied' && <AppliedCampaigns />}
+              {activeTab === 'projects' && <ActiveProjects />}
               {activeTab === 'payments' && <PaymentsSection />}
               {activeTab === 'analytics' && <Analytics />}
               {activeTab === 'portfolio' && <PortfolioSection />}
@@ -372,25 +500,6 @@ export default function CreatorDashboard() {
           </AnimatePresence>
         </div>
       </main>
-
-      {/* Bottom Nav - Mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t-2 border-black flex justify-around p-4 z-50">
-        <button onClick={() => setActiveTab('opportunities')} className={activeTab === 'opportunities' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <LayoutDashboard size={24} />
-        </button>
-        <button onClick={() => setActiveTab('applied')} className={activeTab === 'applied' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <Briefcase size={24} />
-        </button>
-        <button onClick={() => navigate('/messages')} className="text-gray-400">
-          <MessageSquare size={24} />
-        </button>
-        <button onClick={() => setActiveTab('payments')} className={activeTab === 'payments' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <CreditCard size={24} />
-        </button>
-        <button onClick={() => setActiveTab('portfolio')} className={activeTab === 'portfolio' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <Upload size={24} />
-        </button>
-      </nav>
     </div>
   );
 }

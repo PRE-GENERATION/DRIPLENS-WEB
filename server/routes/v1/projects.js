@@ -11,6 +11,7 @@
  *   POST   /:id/revision    → brand requests a revision
  *   POST   /:id/approve     → brand approves + releases payment
  *   POST   /:id/cancel      → either party cancels
+ *   POST   /:id/dispute     → either party raises a dispute
  */
 
 import { Router } from 'express';
@@ -26,6 +27,7 @@ import {
   updateProgressSchema,
   submitDeliverableSchema,
   requestRevisionSchema,
+  raiseDisputeSchema,
 }                                      from '../../schemas/projectSchemas.js';
 
 const router = Router();
@@ -116,7 +118,7 @@ router.post(
   },
   async (req, res, next) => {
     try {
-      let file_url, file_name, file_size, mime_type, storage_path, notes;
+      let file_url, file_name, file_size, mime_type, storage_path, notes, type;
 
       if (req.file) {
         // Mode 1: file uploaded in this request → push to Supabase Storage
@@ -131,6 +133,7 @@ router.post(
         mime_type     = req.file.mimetype;
         storage_path  = uploaded.storagePath;
         notes         = req.body?.notes ?? null;
+        type          = req.body?.type  ?? 'draft';
       } else {
         // Mode 2: client already has the URL (e.g. Supabase Storage SDK used client-side)
         const parsed = submitDeliverableSchema.safeParse(req.body);
@@ -138,13 +141,13 @@ router.post(
           const messages = parsed.error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
           return res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: messages } });
         }
-        ({ file_url, file_name, file_size, mime_type, storage_path, notes } = parsed.data);
+        ({ file_url, file_name, file_size, mime_type, storage_path, notes, type } = parsed.data);
       }
 
       const result = await projectService.submitDeliverable(
         req.params.id,
         req.user.id,
-        { file_url, file_name, file_size, mime_type, storage_path, notes },
+        { file_url, file_name, file_size, mime_type, storage_path, notes, type },
       );
 
       res.status(201).json({ success: true, data: result });
@@ -199,6 +202,25 @@ router.post(
         req.params.id,
         req.user.id,
         req.body?.reason,
+      );
+      res.json({ success: true, data: { project } });
+    } catch (err) { next(err); }
+  },
+);
+
+// ── Raise dispute ─────────────────────────────────────────────────────────
+
+router.post(
+  '/:id/dispute',
+  requireAuth,
+  apiLimiter,
+  validate(raiseDisputeSchema),
+  async (req, res, next) => {
+    try {
+      const project = await projectService.raiseDispute(
+        req.params.id,
+        req.user.id,
+        req.body,
       );
       res.json({ success: true, data: { project } });
     } catch (err) { next(err); }

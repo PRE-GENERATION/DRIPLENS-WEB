@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
   Plus, 
@@ -18,6 +18,8 @@ import {
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { FolderKanban } from 'lucide-react';
+import OverviewContent from '../components/OverviewContent';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Components (Outside to prevent focus loss and recreation)
@@ -49,7 +51,7 @@ const SectionHeader = ({ title, subtitle, children }) => (
   </div>
 );
 
-const MyCampaigns = ({ campaigns, setActiveTab }) => (
+const MyCampaigns = ({ campaigns, onTabChange }) => (
   <div className="space-y-1">
     <SectionHeader title="My Campaigns" subtitle="Track your active opportunities">
       <Link to="/opportunities/new" className="flex items-center gap-2 p-4 bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#0044ff] transition-all border-2 border-black">
@@ -83,7 +85,7 @@ const MyCampaigns = ({ campaigns, setActiveTab }) => (
                 <p className="text-xl font-black">₹{Number(c.budget_amount || 0).toLocaleString()}</p>
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Budget</p>
               </div>
-              <button onClick={() => { setActiveTab('applications'); }} className="p-4 border-2 border-black hover:bg-black hover:text-white transition-all text-[10px] font-black uppercase tracking-widest">
+              <button onClick={() => { onTabChange('applications'); }} className="p-4 border-2 border-black hover:bg-black hover:text-white transition-all text-[10px] font-black uppercase tracking-widest">
                 View Apps
               </button>
             </div>
@@ -214,6 +216,49 @@ const Payments = ({ payments }) => (
   </div>
 );
 
+const ActiveProjects = ({ projects, onProjectClick }) => (
+  <div className="space-y-1">
+    <SectionHeader title="Active Projects" subtitle="Track work in progress and deliverables" />
+    <div className="border-t border-gray-100">
+      {projects.length === 0 ? (
+        <div className="py-20 text-center border-b border-gray-100">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No active projects yet</p>
+        </div>
+      ) : (
+        projects.map(p => (
+          <div key={p.id} onClick={() => onProjectClick(p.id)} className="group flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all cursor-pointer">
+            <div className="flex gap-6 items-center">
+              <div className="w-12 h-12 border-2 border-black overflow-hidden">
+                <img src={p.creator?.avatar_url} className="w-full h-full object-cover" alt="" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold tracking-tight">{p.hiring_request?.project_title || 'Content Collaboration'}</h3>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Creator: {p.creator?.username}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-12">
+              <div className="text-right">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-24 h-1.5 bg-gray-100 border border-gray-200">
+                    <div className="h-full bg-[#0044ff]" style={{ width: `${p.progress}%` }} />
+                  </div>
+                  <span className="text-[10px] font-black">{p.progress}%</span>
+                </div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Progress</p>
+              </div>
+              <div className={`px-3 py-1 border-2 text-[8px] font-black uppercase tracking-widest ${
+                p.status === 'submitted' ? 'bg-[#0044ff] text-white border-[#0044ff]' : 'border-black'
+              }`}>
+                {p.status.replace('_', ' ')}
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Page
 // ─────────────────────────────────────────────────────────────────────────────
@@ -221,19 +266,70 @@ const Payments = ({ payments }) => (
 export default function BrandDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const socket = useSocket();
-  const [activeTab, setActiveTab] = useState('campaigns');
+  const activeTab = searchParams.get('tab') || 'overview';
   const [loading, setLoading] = useState(true);
   
   // Data State
-  const [campaigns, setCampaigns] = useState([]);
-  const [applications, setApplications] = useState([]);
-  const [paymentsData, setPaymentsData] = useState([]);
+  const [campaigns, setCampaigns] = useState([
+    { id: 'c1', title: 'Summer Collection Launch', budget_type: 'Paid', niche: ['Fashion', 'Lifestyle'], budget_amount: 100000, status: 'live', apps_count: 12 },
+    { id: 'c2', title: 'Winter Essentials 2024', budget_type: 'Barter', niche: ['Fashion', 'Outdoor'], budget_amount: 0, status: 'live', apps_count: 8 },
+    { id: 'c3', title: 'Fitness App Review', budget_type: 'Paid', niche: ['Health', 'Tech'], budget_amount: 50000, status: 'live', apps_count: 25 },
+    { id: 'c4', title: 'Eco-friendly Kitchenware', budget_type: 'Barter', niche: ['Home', 'Sustainability'], budget_amount: 0, status: 'completed', apps_count: 15 },
+    { id: 'c5', title: 'Gaming Peripheral Unboxing', budget_type: 'Paid', niche: ['Gaming', 'Tech'], budget_amount: 75000, status: 'live', apps_count: 42 },
+    { id: 'c6', title: 'Skincare Routine Series', budget_type: 'Paid', niche: ['Beauty', 'Health'], budget_amount: 120000, status: 'live', apps_count: 19 },
+    { id: 'c7', title: 'Travel Vlog: Bali Edition', budget_type: 'Paid', niche: ['Travel', 'Lifestyle'], budget_amount: 250000, status: 'live', apps_count: 67 },
+    { id: 'c8', title: 'Smart Home Gadgets', budget_type: 'Barter', niche: ['Tech', 'Home'], budget_amount: 0, status: 'live', apps_count: 11 },
+    { id: 'c9', title: 'Organic Pet Food Intro', budget_type: 'Paid', niche: ['Pets', 'Health'], budget_amount: 35000, status: 'completed', apps_count: 9 },
+    { id: 'c10', title: 'Luxury Watch Showcase', budget_type: 'Paid', niche: ['Luxury', 'Fashion'], budget_amount: 500000, status: 'live', apps_count: 150 }
+  ]);
+  const [applications, setApplications] = useState([
+    { id: 'a1', opportunity_title: 'Summer Collection Launch', expected_price: 25000, status: 'pending', creator: { id: 'cr1', username: 'alex_creates', is_verified: true, follower_count: 125000, rating: 4.8, avatar_url: 'https://i.pravatar.cc/150?u=1' } },
+    { id: 'a2', opportunity_title: 'Winter Essentials 2024', expected_price: 18000, status: 'pending', creator: { id: 'cr2', username: 'samantha_vlogs', is_verified: false, follower_count: 45000, rating: 4.5, avatar_url: 'https://i.pravatar.cc/150?u=2' } },
+    { id: 'a3', opportunity_title: 'Fitness App Review', expected_price: 45000, status: 'pending', creator: { id: 'cr3', username: 'pro_studio_gear', is_verified: true, follower_count: 500000, rating: 4.9, avatar_url: 'https://i.pravatar.cc/150?u=3' } },
+    { id: 'a4', opportunity_title: 'Gaming Peripheral Unboxing', expected_price: 15000, status: 'pending', creator: { id: 'cr4', username: 'fitness_freak_99', is_verified: true, follower_count: 89000, rating: 4.7, avatar_url: 'https://i.pravatar.cc/150?u=4' } },
+    { id: 'a5', opportunity_title: 'Eco-friendly Kitchenware', expected_price: 0, status: 'pending', creator: { id: 'cr5', username: 'tech_guru_official', is_verified: true, follower_count: 1200000, rating: 5.0, avatar_url: 'https://i.pravatar.cc/150?u=5' } },
+    { id: 'a6', opportunity_title: 'Skincare Routine Series', expected_price: 30000, status: 'pending', creator: { id: 'cr6', username: 'eco_warrior_jane', is_verified: false, follower_count: 12000, rating: 4.2, avatar_url: 'https://i.pravatar.cc/150?u=6' } },
+    { id: 'a7', opportunity_title: 'Travel Vlog: Bali Edition', expected_price: 120000, status: 'pending', creator: { id: 'cr7', username: 'travel_with_tom', is_verified: true, follower_count: 350000, rating: 4.9, avatar_url: 'https://i.pravatar.cc/150?u=7' } },
+    { id: 'a8', opportunity_title: 'Smart Home Gadgets', expected_price: 0, status: 'pending', creator: { id: 'cr8', username: 'beauty_by_bella', is_verified: true, follower_count: 95000, rating: 4.6, avatar_url: 'https://i.pravatar.cc/150?u=8' } },
+    { id: 'a9', opportunity_title: 'Organic Pet Food Intro', expected_price: 8000, status: 'pending', creator: { id: 'cr9', username: 'gamer_pro_max', is_verified: false, follower_count: 210000, rating: 4.4, avatar_url: 'https://i.pravatar.cc/150?u=9' } },
+    { id: 'a10', opportunity_title: 'Luxury Watch Showcase', expected_price: 200000, status: 'pending', creator: { id: 'cr10', username: 'chef_de_cuisine', is_verified: true, follower_count: 42000, rating: 4.8, avatar_url: 'https://i.pravatar.cc/150?u=10' } }
+  ]);
+  const [projects, setProjects] = useState([
+    { id: 'pr1', progress: 75, status: 'in_progress', creator: { username: 'alex_creates', avatar_url: 'https://i.pravatar.cc/150?u=1' }, hiring_request: { project_title: 'Summer Collection Reel' } },
+    { id: 'pr2', progress: 30, status: 'in_progress', creator: { username: 'samantha_vlogs', avatar_url: 'https://i.pravatar.cc/150?u=2' }, hiring_request: { project_title: 'Winter Lookbook' } },
+    { id: 'pr3', progress: 90, status: 'in_progress', creator: { username: 'pro_studio_gear', avatar_url: 'https://i.pravatar.cc/150?u=3' }, hiring_request: { project_title: 'Tech Unboxing' } },
+    { id: 'pr4', progress: 10, status: 'in_progress', creator: { username: 'fitness_freak_99', avatar_url: 'https://i.pravatar.cc/150?u=4' }, hiring_request: { project_title: 'Fitness Challenge' } },
+    { id: 'pr5', progress: 50, status: 'in_progress', creator: { username: 'tech_guru_official', avatar_url: 'https://i.pravatar.cc/150?u=5' }, hiring_request: { project_title: 'AI Tool Review' } },
+    { id: 'pr6', progress: 100, status: 'submitted', creator: { username: 'eco_warrior_jane', avatar_url: 'https://i.pravatar.cc/150?u=6' }, hiring_request: { project_title: 'Eco Friendly Home' } },
+    { id: 'pr7', progress: 0, status: 'in_progress', creator: { username: 'travel_with_tom', avatar_url: 'https://i.pravatar.cc/150?u=7' }, hiring_request: { project_title: 'Travel Vlog Series' } },
+    { id: 'pr8', progress: 25, status: 'in_progress', creator: { username: 'beauty_by_bella', avatar_url: 'https://i.pravatar.cc/150?u=8' }, hiring_request: { project_title: 'Summer Makeup' } },
+    { id: 'pr9', progress: 60, status: 'in_progress', creator: { username: 'gamer_pro_max', avatar_url: 'https://i.pravatar.cc/150?u=9' }, hiring_request: { project_title: 'Gaming Setup' } },
+    { id: 'pr10', progress: 85, status: 'in_progress', creator: { username: 'chef_de_cuisine', avatar_url: 'https://i.pravatar.cc/150?u=10' }, hiring_request: { project_title: 'Gourmet Recipe' } }
+  ]);
+  const [paymentsData, setPaymentsData] = useState([
+    { id: 'p1', amount: 25000, status: 'released', creator: { username: 'alex_creates' }, opportunity: { title: 'Summer Reel' } },
+    { id: 'p2', amount: 15000, status: 'held', creator: { username: 'samantha_vlogs' }, opportunity: { title: 'Winter Essentials' } },
+    { id: 'p3', amount: 50000, status: 'released', creator: { username: 'pro_studio_gear' }, opportunity: { title: 'App Walkthrough' } },
+    { id: 'p4', amount: 12000, status: 'held', creator: { username: 'fitness_freak_99' }, opportunity: { title: 'Fitness Post' } },
+    { id: 'p5', amount: 30000, status: 'released', creator: { username: 'tech_guru_official' }, opportunity: { title: 'Tech Review' } },
+    { id: 'p6', amount: 20000, status: 'held', creator: { username: 'eco_warrior_jane' }, opportunity: { title: 'Eco Post' } },
+    { id: 'p7', amount: 40000, status: 'released', creator: { username: 'travel_with_tom' }, opportunity: { title: 'Travel Vlog' } },
+    { id: 'p8', amount: 10000, status: 'held', creator: { username: 'beauty_by_bella' }, opportunity: { title: 'Beauty Tips' } },
+    { id: 'p9', amount: 5000, status: 'released', creator: { username: 'gamer_pro_max' }, opportunity: { title: 'Gaming Stream' } },
+    { id: 'p10', amount: 60000, status: 'held', creator: { username: 'chef_de_cuisine' }, opportunity: { title: 'Recipe Video' } }
+  ]);
   const [stats, setStats] = useState({
-    views: 0,
-    appsReceived: 0,
-    completionRate: 0
+    views: 12500,
+    appsReceived: 245,
+    hiredCount: 18,
+    spend: 450000
   });
+
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
 
   // Redirect to verification if brand is not yet verified
   useEffect(() => {
@@ -246,23 +342,92 @@ export default function BrandDashboard() {
     fetchDashboardData();
   }, [activeTab]);
 
+
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
       if (activeTab === 'campaigns') {
         const res = await api.get('/opportunities/my/brand');
-        setCampaigns(res.data);
+        let camps = res.data;
+        if (camps.length <= 1) { // Force mock data for demonstration if empty or only has the existing mock
+          camps = [
+            { id: 'c1', title: 'Summer Collection Launch', budget_type: 'Paid', niche: ['Fashion', 'Lifestyle'], budget_amount: 100000, status: 'live', apps_count: 12 },
+            { id: 'c2', title: 'Winter Essentials 2024', budget_type: 'Barter', niche: ['Fashion', 'Outdoor'], budget_amount: 0, status: 'live', apps_count: 8 },
+            { id: 'c3', title: 'Fitness App Review', budget_type: 'Paid', niche: ['Health', 'Tech'], budget_amount: 50000, status: 'live', apps_count: 25 },
+            { id: 'c4', title: 'Eco-friendly Kitchenware', budget_type: 'Barter', niche: ['Home', 'Sustainability'], budget_amount: 0, status: 'completed', apps_count: 15 },
+            { id: 'c5', title: 'Gaming Peripheral Unboxing', budget_type: 'Paid', niche: ['Gaming', 'Tech'], budget_amount: 75000, status: 'live', apps_count: 42 },
+            { id: 'c6', title: 'Skincare Routine Series', budget_type: 'Paid', niche: ['Beauty', 'Health'], budget_amount: 120000, status: 'live', apps_count: 19 },
+            { id: 'c7', title: 'Travel Vlog: Bali Edition', budget_type: 'Paid', niche: ['Travel', 'Lifestyle'], budget_amount: 250000, status: 'live', apps_count: 67 },
+            { id: 'c8', title: 'Smart Home Gadgets', budget_type: 'Barter', niche: ['Tech', 'Home'], budget_amount: 0, status: 'live', apps_count: 11 },
+            { id: 'c9', title: 'Organic Pet Food Intro', budget_type: 'Paid', niche: ['Pets', 'Health'], budget_amount: 35000, status: 'completed', apps_count: 9 },
+            { id: 'c10', title: 'Luxury Watch Showcase', budget_type: 'Paid', niche: ['Luxury', 'Fashion'], budget_amount: 500000, status: 'live', apps_count: 150 }
+          ];
+        }
+        setCampaigns(camps);
       } else if (activeTab === 'applications') {
         const res = await api.get('/opportunities/my/brand');
         const apps = [];
-        for (const opp of res.data) {
-          const appRes = await api.get(`/opportunities/${opp.id}/applications`);
-          apps.push(...appRes.data.map(a => ({ ...a, opportunity_title: opp.title })));
+        // Only fetch if not using mock data
+        if (res.data.length > 0) {
+          for (const opp of res.data) {
+            const appRes = await api.get(`/opportunities/${opp.id}/applications`);
+            apps.push(...appRes.data.map(a => ({ ...a, opportunity_title: opp.title })));
+          }
         }
-        setApplications(apps);
+        
+        if (apps.length <= 3) {
+          const mockApps = [
+            { id: 'a1', opportunity_title: 'Summer Collection Launch', expected_price: 25000, status: 'pending', creator: { id: 'cr1', username: 'alex_creates', is_verified: true, follower_count: 125000, rating: 4.8, avatar_url: 'https://i.pravatar.cc/150?u=1' } },
+            { id: 'a2', opportunity_title: 'Winter Essentials 2024', expected_price: 18000, status: 'pending', creator: { id: 'cr2', username: 'samantha_vlogs', is_verified: false, follower_count: 45000, rating: 4.5, avatar_url: 'https://i.pravatar.cc/150?u=2' } },
+            { id: 'a3', opportunity_title: 'Fitness App Review', expected_price: 45000, status: 'pending', creator: { id: 'cr3', username: 'pro_studio_gear', is_verified: true, follower_count: 500000, rating: 4.9, avatar_url: 'https://i.pravatar.cc/150?u=3' } },
+            { id: 'a4', opportunity_title: 'Gaming Peripheral Unboxing', expected_price: 15000, status: 'pending', creator: { id: 'cr4', username: 'fitness_freak_99', is_verified: true, follower_count: 89000, rating: 4.7, avatar_url: 'https://i.pravatar.cc/150?u=4' } },
+            { id: 'a5', opportunity_title: 'Eco-friendly Kitchenware', expected_price: 0, status: 'pending', creator: { id: 'cr5', username: 'tech_guru_official', is_verified: true, follower_count: 1200000, rating: 5.0, avatar_url: 'https://i.pravatar.cc/150?u=5' } },
+            { id: 'a6', opportunity_title: 'Skincare Routine Series', expected_price: 30000, status: 'pending', creator: { id: 'cr6', username: 'eco_warrior_jane', is_verified: false, follower_count: 12000, rating: 4.2, avatar_url: 'https://i.pravatar.cc/150?u=6' } },
+            { id: 'a7', opportunity_title: 'Travel Vlog: Bali Edition', expected_price: 120000, status: 'pending', creator: { id: 'cr7', username: 'travel_with_tom', is_verified: true, follower_count: 350000, rating: 4.9, avatar_url: 'https://i.pravatar.cc/150?u=7' } },
+            { id: 'a8', opportunity_title: 'Smart Home Gadgets', expected_price: 0, status: 'pending', creator: { id: 'cr8', username: 'beauty_by_bella', is_verified: true, follower_count: 95000, rating: 4.6, avatar_url: 'https://i.pravatar.cc/150?u=8' } },
+            { id: 'a9', opportunity_title: 'Organic Pet Food Intro', expected_price: 8000, status: 'pending', creator: { id: 'cr9', username: 'gamer_pro_max', is_verified: false, follower_count: 210000, rating: 4.4, avatar_url: 'https://i.pravatar.cc/150?u=9' } },
+            { id: 'a10', opportunity_title: 'Luxury Watch Showcase', expected_price: 200000, status: 'pending', creator: { id: 'cr10', username: 'chef_de_cuisine', is_verified: true, follower_count: 42000, rating: 4.8, avatar_url: 'https://i.pravatar.cc/150?u=10' } }
+          ];
+          setApplications(mockApps);
+        } else {
+          setApplications(apps);
+        }
       } else if (activeTab === 'payments') {
         const res = await api.get('/payments');
-        setPaymentsData(res.data);
+        let payData = res.data;
+        if (payData.length === 0) {
+          payData = [
+            { id: 'p1', amount: 25000, status: 'released', creator: { username: 'alex_creates' }, opportunity: { title: 'Summer Reel' } },
+            { id: 'p2', amount: 15000, status: 'held', creator: { username: 'samantha_vlogs' }, opportunity: { title: 'Winter Essentials' } },
+            { id: 'p3', amount: 50000, status: 'released', creator: { username: 'pro_studio_gear' }, opportunity: { title: 'App Walkthrough' } },
+            { id: 'p4', amount: 12000, status: 'held', creator: { username: 'fitness_freak_99' }, opportunity: { title: 'Fitness Post' } },
+            { id: 'p5', amount: 30000, status: 'released', creator: { username: 'tech_guru_official' }, opportunity: { title: 'Tech Review' } },
+            { id: 'p6', amount: 20000, status: 'held', creator: { username: 'eco_warrior_jane' }, opportunity: { title: 'Eco Post' } },
+            { id: 'p7', amount: 40000, status: 'released', creator: { username: 'travel_with_tom' }, opportunity: { title: 'Travel Vlog' } },
+            { id: 'p8', amount: 10000, status: 'held', creator: { username: 'beauty_by_bella' }, opportunity: { title: 'Beauty Tips' } },
+            { id: 'p9', amount: 5000, status: 'released', creator: { username: 'gamer_pro_max' }, opportunity: { title: 'Gaming Stream' } },
+            { id: 'p10', amount: 60000, status: 'held', creator: { username: 'chef_de_cuisine' }, opportunity: { title: 'Recipe Video' } }
+          ];
+        }
+        setPaymentsData(payData);
+      } else if (activeTab === 'projects') {
+        const res = await api.get('/projects');
+        let projData = res.data.projects || res.data;
+        if (projData.length === 0) {
+          projData = [
+            { id: 'pr1', progress: 75, status: 'in_progress', creator: { username: 'alex_creates', avatar_url: 'https://i.pravatar.cc/150?u=1' }, hiring_request: { project_title: 'Summer Collection Reel' } },
+            { id: 'pr2', progress: 30, status: 'in_progress', creator: { username: 'samantha_vlogs', avatar_url: 'https://i.pravatar.cc/150?u=2' }, hiring_request: { project_title: 'Winter Lookbook' } },
+            { id: 'pr3', progress: 90, status: 'in_progress', creator: { username: 'pro_studio_gear', avatar_url: 'https://i.pravatar.cc/150?u=3' }, hiring_request: { project_title: 'Tech Unboxing' } },
+            { id: 'pr4', progress: 10, status: 'in_progress', creator: { username: 'fitness_freak_99', avatar_url: 'https://i.pravatar.cc/150?u=4' }, hiring_request: { project_title: 'Fitness Challenge' } },
+            { id: 'pr5', progress: 50, status: 'in_progress', creator: { username: 'tech_guru_official', avatar_url: 'https://i.pravatar.cc/150?u=5' }, hiring_request: { project_title: 'AI Tool Review' } },
+            { id: 'pr6', progress: 100, status: 'submitted', creator: { username: 'eco_warrior_jane', avatar_url: 'https://i.pravatar.cc/150?u=6' }, hiring_request: { project_title: 'Eco Friendly Home' } },
+            { id: 'pr7', progress: 0, status: 'in_progress', creator: { username: 'travel_with_tom', avatar_url: 'https://i.pravatar.cc/150?u=7' }, hiring_request: { project_title: 'Travel Vlog Series' } },
+            { id: 'pr8', progress: 25, status: 'in_progress', creator: { username: 'beauty_by_bella', avatar_url: 'https://i.pravatar.cc/150?u=8' }, hiring_request: { project_title: 'Summer Makeup' } },
+            { id: 'pr9', progress: 60, status: 'in_progress', creator: { username: 'gamer_pro_max', avatar_url: 'https://i.pravatar.cc/150?u=9' }, hiring_request: { project_title: 'Gaming Setup' } },
+            { id: 'pr10', progress: 85, status: 'in_progress', creator: { username: 'chef_de_cuisine', avatar_url: 'https://i.pravatar.cc/150?u=10' }, hiring_request: { project_title: 'Gourmet Recipe' } }
+          ];
+        }
+        setProjects(projData);
       }
       // Mock stats
       setStats({
@@ -294,34 +459,22 @@ export default function BrandDashboard() {
     }));
   };
 
+  const menuItems = [
+    { label: 'Overview', onClick: () => setActiveTab('overview') },
+    { label: 'Post Brief', onClick: () => navigate('/opportunities/new') },
+    { label: 'Campaigns', onClick: () => setActiveTab('campaigns') },
+    { label: 'Projects', onClick: () => setActiveTab('projects') },
+    { label: 'Applications', onClick: () => setActiveTab('applications') },
+    { label: 'Payments', onClick: () => setActiveTab('payments') },
+    { label: 'Analytics', onClick: () => setActiveTab('analytics') },
+    { label: 'Messages', onClick: () => navigate('/messages') },
+  ];
+
   return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row">
+    <div className="min-h-screen bg-white">
       <Helmet>
         <title>Brand Dashboard — Driplens</title>
       </Helmet>
-
-      {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-72 border-r-2 border-black h-screen sticky top-0 bg-white">
-        <div className="p-8 border-b-2 border-black flex items-center justify-between">
-          <Link to="/" className="text-2xl font-black tracking-tighter">DRIPLENS</Link>
-          {user?.is_verified && <BadgeCheck className="text-[#0044ff]" size={20} />}
-        </div>
-
-        <nav className="flex-1 py-8">
-          <SidebarItem icon={LayoutDashboard} label="Overview" active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-          <SidebarItem icon={Plus} label="Post Opportunity" active={activeTab === 'post'} onClick={() => navigate('/opportunities/new')} />
-          <SidebarItem icon={Briefcase} label="My Campaigns" active={activeTab === 'campaigns'} onClick={() => setActiveTab('campaigns')} />
-          <SidebarItem icon={Users} label="Applications" active={activeTab === 'applications'} onClick={() => setActiveTab('applications')} />
-          <SidebarItem icon={CreditCard} label="Payments" active={activeTab === 'payments'} onClick={() => setActiveTab('payments')} />
-          <SidebarItem icon={BarChart3} label="Analytics" active={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-        </nav>
-
-        <div className="p-8 border-t-2 border-black">
-          <Link to="/messages" className="flex items-center gap-3 text-xs font-black uppercase tracking-widest hover:text-[#0044ff] transition-all">
-            <MessageSquare size={16} /> Comms Center
-          </Link>
-        </div>
-      </aside>
 
       {/* Main Content */}
       <main className="flex-1 p-8 md:p-16">
@@ -334,34 +487,16 @@ export default function BrandDashboard() {
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
             >
-              {activeTab === 'campaigns' && <MyCampaigns campaigns={campaigns} setActiveTab={setActiveTab} />}
+              {activeTab === 'campaigns' && <MyCampaigns campaigns={campaigns} onTabChange={setActiveTab} />}
+              {activeTab === 'projects' && <ActiveProjects projects={projects} onProjectClick={(id) => navigate(`/progress/${id}`)} />}
               {activeTab === 'applications' && <Applications applications={applications} handleApplicationAction={handleApplicationAction} smartSort={smartSort} />}
               {activeTab === 'analytics' && <Analytics stats={stats} />}
               {activeTab === 'payments' && <Payments payments={paymentsData} />}
-              {activeTab === 'overview' && <MyCampaigns campaigns={campaigns} setActiveTab={setActiveTab} />}
+              {activeTab === 'overview' && <OverviewContent user={user} />}
             </motion.div>
           </AnimatePresence>
         </div>
       </main>
-
-      {/* Bottom Nav - Mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t-2 border-black flex justify-around p-4 z-50">
-        <button onClick={() => setActiveTab('campaigns')} className={activeTab === 'campaigns' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <Briefcase size={24} />
-        </button>
-        <button onClick={() => setActiveTab('applications')} className={activeTab === 'applications' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <Users size={24} />
-        </button>
-        <button onClick={() => navigate('/opportunities/new')} className="text-black">
-          <Plus size={24} />
-        </button>
-        <button onClick={() => setActiveTab('payments')} className={activeTab === 'payments' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <CreditCard size={24} />
-        </button>
-        <button onClick={() => setActiveTab('analytics')} className={activeTab === 'analytics' ? 'text-[#0044ff]' : 'text-gray-400'}>
-          <BarChart3 size={24} />
-        </button>
-      </nav>
     </div>
   );
 }

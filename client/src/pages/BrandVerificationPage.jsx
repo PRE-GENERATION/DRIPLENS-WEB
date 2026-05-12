@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
@@ -37,8 +37,15 @@ export default function BrandVerificationPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already verified
+  useEffect(() => {
+    if (user?.is_verified) {
+      navigate('/dashboard/brand', { replace: true });
+    }
+  }, [user, navigate]);
 
   const [formData, setFormData] = useState({
     otp: '',
@@ -65,12 +72,22 @@ export default function BrandVerificationPage() {
       if (formData.companyProof) {
         const uploadData = new FormData();
         uploadData.append('media', formData.companyProof);
+        uploadData.append('title', 'Company Proof');
+        uploadData.append('category', 'Design'); // Required by upload schema
         const uploadRes = await api.post('/upload/portfolio', uploadData); 
         proofUrl = uploadRes.data.url;
       }
 
       // 2. Update profile verification status
-      await api.patch(`/creators/profile`, { is_verified: true });
+      const updatedProfile = await api.patch(`/creators/profile`, { 
+        is_verified: true,
+        gst_number: formData.gstNumber || undefined,
+        company_proof_url: proofUrl || undefined,
+        website: formData.socialLink || undefined
+      });
+
+      // Update local state
+      updateUser({ is_verified: true });
 
       // Redirect to dashboard
       navigate('/dashboard/brand');
@@ -85,7 +102,7 @@ export default function BrandVerificationPage() {
     { id: 1, title: 'Identity', icon: Smartphone },
     { id: 2, title: 'Business', icon: BuildingIcon }, 
     { id: 3, title: 'Proof', icon: FileText },
-    { id: 4, title: 'Social', icon: Globe }
+    { id: 4, title: 'Social (Opt)', icon: Globe }
   ];
 
   return (
@@ -205,7 +222,7 @@ export default function BrandVerificationPage() {
                 className="space-y-6"
               >
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Social Verification</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Social Verification (Optional)</label>
                   <p className="text-sm text-gray-600 mb-4">Paste your official Instagram or Website link.</p>
                   <div className="relative">
                     <Globe className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
@@ -221,13 +238,22 @@ export default function BrandVerificationPage() {
 
                 {error && <div className="text-red-500 text-xs font-bold uppercase tracking-widest">{error}</div>}
 
-                <button 
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="w-full p-5 bg-[#0044ff] text-white font-black uppercase tracking-widest border-2 border-[#0044ff] hover:bg-black hover:border-black transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50"
-                >
-                  {loading ? 'Processing...' : 'Complete Verification'}
-                </button>
+                <div className="flex gap-4">
+                  <button 
+                    onClick={prevStep} 
+                    disabled={loading}
+                    className="flex-1 p-5 border-2 border-black font-black uppercase tracking-widest hover:bg-gray-50 transition-all disabled:opacity-50"
+                  >
+                    Back
+                  </button>
+                  <button 
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="flex-1 p-5 bg-[#0044ff] text-white font-black uppercase tracking-widest border-2 border-[#0044ff] hover:bg-black hover:border-black transition-all shadow-xl shadow-blue-500/20 disabled:opacity-50"
+                  >
+                    {loading ? 'Processing...' : (formData.socialLink ? 'Complete Verification' : 'Skip & Complete')}
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

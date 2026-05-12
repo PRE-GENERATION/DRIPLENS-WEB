@@ -56,7 +56,7 @@ const upload = multer({
 router.post(
   '/portfolio',
   requireAuth,
-  requireRole('creator'),
+  requireRole('creator', 'brand'),
   uploadLimiter,
   upload.array('media', 20), // Support up to 20 files at once
   validate(uploadMetaSchema),

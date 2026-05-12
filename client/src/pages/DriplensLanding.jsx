@@ -27,20 +27,6 @@ const DriplensLanding = () => {
   return (
     <div className="bg-[#050508] min-h-screen text-white font-sans selection:bg-[#ccff00] selection:text-black overflow-hidden relative">
       
-      {/* Local Navbar */}
-      <nav className="absolute top-0 left-0 w-full px-8 py-6 flex justify-between items-center z-50 mix-blend-difference">
-        <div onClick={() => navigate('/')} className="text-2xl font-bold tracking-tighter text-white cursor-pointer">DRIPLENS</div>
-        <div className="hidden md:flex gap-8 text-sm font-medium text-gray-300">
-          <a href="#work" className="hover:text-white transition">Work</a>
-          <a href="#process" className="hover:text-white transition">Process</a>
-          <a href="#about" className="hover:text-white transition">About</a>
-          <a href="#ethos" className="hover:text-white transition">Our ethos</a>
-        </div>
-        <button className="bg-white/10 backdrop-blur-md border border-white/20 px-5 py-2 rounded-full text-sm font-semibold hover:bg-white hover:text-black transition duration-300">
-          Start a project
-        </button>
-      </nav>
-
       {/* 1. Hero Section */}
       <section className="relative min-h-screen flex flex-col justify-center items-center pt-20 px-6">
         <motion.div 

@@ -91,7 +91,7 @@ export default function DirectMessagePage() {
   const rate = creator.min_budget ? `₹${creator.min_budget}/hr` : 'Contact for Rates';
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-60px)] bg-white overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-full bg-white overflow-hidden">
       
       {/* Left Sidebar - Creator Profile */}
       <div className="w-full lg:w-[30%] lg:min-w-[320px] lg:max-w-[400px] bg-white border-r border-[#F0F0F0] p-8 md:p-10 flex flex-col justify-center relative shrink-0">
