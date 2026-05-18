@@ -156,7 +156,7 @@ export default function IntegrationsPage() {
       setLoginStep('success');
       setTimeout(() => {
         setConnectingItem(null);
-        navigate('/dashboard/creator');
+        navigate('/dashboard');
       }, 1500);
     }, 2000);
   };

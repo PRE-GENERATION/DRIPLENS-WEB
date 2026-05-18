@@ -61,7 +61,7 @@ export default function MessagingPage() {
           ];
         }
         setRequests(reqs);
-        if (reqs.length > 0 && !activeRequestId) {
+        if (reqs.length > 0) {
            setActiveRequestId(reqs[0].id);
         }
       } catch (err) {
@@ -77,7 +77,7 @@ export default function MessagingPage() {
 
     const load = async () => {
       try {
-        if (activeRequestId.startsWith('mock-req-')) {
+        if (activeRequestId.startsWith('mock-req-') || activeRequestId.length <= 2) {
           setMessages([
             { id: 'm1', content: 'Hey, I love the brief for the Summer Campaign!', sender_id: 'c1', created_at: new Date(Date.now() - 3600000).toISOString() },
             { id: 'm2', content: 'Are you open to video reels instead of just stories?', sender_id: 'c1', created_at: new Date(Date.now() - 3500000).toISOString() },
@@ -91,7 +91,7 @@ export default function MessagingPage() {
         // Mark as read
         if (socket) {
           const req = requests.find(r => r.id === activeRequestId);
-          const otherId = currentUser.role === 'creator' ? req?.brand_id : req?.creator_id;
+          const otherId = currentUser?.role === 'creator' ? req?.brand_id : req?.creator_id;
           socket.emit('message_read', { recipientId: otherId, requestId: activeRequestId });
           await api.patch(`/messages/${activeRequestId}/read`);
           setRequests(prev => prev.map(r => r.id === activeRequestId ? { ...r, unread_count: 0 } : r));
@@ -101,7 +101,7 @@ export default function MessagingPage() {
       }
     };
     load();
-  }, [activeRequestId, socket, currentUser]);
+  }, [activeRequestId, socket, currentUser, requests]);
 
   useEffect(() => {
     if (!socket) return;
@@ -110,7 +110,7 @@ export default function MessagingPage() {
       if (msg.hiring_request_id === activeRequestId) {
         setMessages(prev => [...prev, msg]);
         const req = requests.find(r => r.id === activeRequestId);
-        const otherId = currentUser.role === 'creator' ? req?.brand_id : req?.creator_id;
+        const otherId = currentUser?.role === 'creator' ? req?.brand_id : req?.creator_id;
         socket.emit('message_read', { recipientId: otherId, requestId: activeRequestId });
       } else {
         setRequests(prev => prev.map(r => r.id === msg.hiring_request_id ? { ...r, unread_count: (r.unread_count || 0) + 1 } : r));
@@ -149,12 +149,22 @@ export default function MessagingPage() {
 
     setNewMessage('');
     try {
-      if (activeRequestId.startsWith('mock-req-')) {
+      if (activeRequestId.startsWith('mock-req-') || activeRequestId.length <= 2) {
         setMessages(prev => [...prev, { id: 'm_mock_new_' + Date.now(), content, sender_id: currentUser?.id, created_at: new Date().toISOString() }]);
+        if (messageContainerRef.current) {
+          setTimeout(() => {
+            messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+          }, 50);
+        }
         return;
       }
       const res = await api.post(`/messages/${activeRequestId}`, { content });
       setMessages(prev => [...prev, res.data.message]);
+      if (messageContainerRef.current) {
+        setTimeout(() => {
+          messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
+        }, 50);
+      }
     } catch (err) {
       console.error(err);
       setNewMessage(content);
@@ -223,13 +233,13 @@ export default function MessagingPage() {
                     transition: 'all 150ms ease'
                   }}
                 >
-                  <div style={{ width: 44, height: 44, background: isActive ? '#222' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, border: '1px solid #000' }}>
-                    {otherUser?.username?.charAt(0).toUpperCase()}
+                  <div style={{ width: 44, height: 44, background: isActive ? '#222' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, border: isActive ? '1px solid #333' : '1px solid #000' }}>
+                    {otherUser?.username ? otherUser.username.charAt(0).toUpperCase() : 'U'}
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
-                      <span style={{ fontSize: 12, fontWeight: 900, textTransform: 'uppercase' }}>{otherUser?.username}</span>
+                      <span style={{ fontSize: 12, fontWeight: 900, textTransform: 'uppercase' }}>{otherUser?.username || 'User'}</span>
                     </div>
                     <div style={{ fontSize: 10, fontWeight: 700, opacity: isActive ? 0.7 : 0.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {req.project_title}
@@ -257,10 +267,10 @@ export default function MessagingPage() {
             <div style={{ padding: '20px 32px', borderBottom: '1px solid #F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FFF' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{ width: 40, height: 40, background: '#000', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900 }}>
-                  {(currentUser?.role === 'creator' ? activeReq.brand : activeReq.creator)?.username?.charAt(0).toUpperCase()}
+                  {((currentUser?.role === 'creator' ? activeReq.brand : activeReq.creator)?.username || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 900, textTransform: 'uppercase' }}>{(currentUser?.role === 'creator' ? activeReq.brand : activeReq.creator)?.username}</div>
+                  <div style={{ fontSize: 14, fontWeight: 900, textTransform: 'uppercase' }}>{(currentUser?.role === 'creator' ? activeReq.brand : activeReq.creator)?.username || 'User'}</div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#0044ff', textTransform: 'uppercase' }}>{activeReq.project_title}</div>
                 </div>
               </div>
@@ -318,11 +328,7 @@ export default function MessagingPage() {
 
             {/* Input Bar */}
             <div style={{ padding: '24px 32px', background: '#FFF', borderTop: '1px solid #F0F0F0' }}>
-              <form onSubmit={sendMessage} style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 16
-              }}>
+              <form onSubmit={sendMessage} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <input 
                   type="text" 
                   value={newMessage}

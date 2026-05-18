@@ -696,7 +696,8 @@ export default function OnboardingPage() {
   
   useEffect(() => {
     if (user?.onboarding_complete && !done) {
-      navigate(`/dashboard/${user.role}`, { replace: true });
+      const dashboardPath = user.role === 'creator' ? '/dashboard' : `/dashboard/${user.role}`;
+      navigate(dashboardPath, { replace: true });
     }
   }, [user, navigate, done]);
 
@@ -753,7 +754,7 @@ export default function OnboardingPage() {
       clear();
       setDone(true);
       updateUser({ onboarding_complete: true, display_name: payload.display_name });
-      setTimeout(() => navigate('/dashboard/creator', { replace: true }), 2000);
+      setTimeout(() => navigate('/dashboard', { replace: true }), 2000);
 
     } catch (err) {
       console.error('Onboarding save failed:', err);

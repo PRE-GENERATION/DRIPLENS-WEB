@@ -256,7 +256,8 @@ export default function AuthPage() {
       if (user.role === 'creator' && !user.onboarding_complete) {
         navigate('/onboarding/step-1', { replace: true });
       } else {
-        const from = location.state?.from?.pathname || `/dashboard/${user.role}`;
+        const dashboardPath = user.role === 'creator' ? '/dashboard' : `/dashboard/${user.role}`;
+        const from = location.state?.from?.pathname || dashboardPath;
         navigate(from, { replace: true });
       }
     }
@@ -326,7 +327,8 @@ export default function AuthPage() {
         if (userData.role === 'creator' && !userData.onboarding_complete) {
           navigate('/onboarding/step-1', { replace: true });
         } else {
-          navigate(`/dashboard/${userData.role}`, { replace: true });
+          const dashboardPath = userData.role === 'creator' ? '/dashboard' : `/dashboard/${userData.role}`;
+          navigate(dashboardPath, { replace: true });
         }
       }
     } catch (err) {

@@ -33,26 +33,10 @@ import {
   CheckCircle2,
   BadgeCheck
 } from 'lucide-react';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area 
-} from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth, subYears } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { useSocket } from '../context/SocketContext';
 import OverviewContent from '../components/OverviewContent';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Components
-// ─────────────────────────────────────────────────────────────────────────────
 
 const SectionHeader = ({ title, subtitle, children }) => (
   <div className="flex items-center justify-between mb-12">
@@ -63,43 +47,6 @@ const SectionHeader = ({ title, subtitle, children }) => (
     {children}
   </div>
 );
-
-const SidebarItem = ({ icon: Icon, label, active, onClick, badge }) => (
-  <button
-    onClick={onClick}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
-      active 
-        ? 'bg-[#0540F2] text-white shadow-lg shadow-blue-200' 
-        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-    }`}
-  >
-    <Icon size={20} className={active ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'} />
-    <span className="flex-1 text-left font-medium text-sm">{label}</span>
-    {badge && (
-      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-        active ? 'bg-white/20 text-white' : 'bg-red-500 text-white'
-      }`}>
-        {badge}
-      </span>
-    )}
-  </button>
-);
-
-const StatMini = ({ label, value, change, isPositive }) => (
-  <div className="flex flex-col gap-1">
-    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
-    <div className="flex items-end gap-2">
-      <h4 className="text-xl font-bold text-gray-900">{value}</h4>
-      <span className={`text-[10px] font-bold flex items-center mb-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-        {isPositive ? '+' : '-'}{change}%
-      </span>
-    </div>
-  </div>
-);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Main Page
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function CreatorDashboard() {
   const { user, logout } = useAuth();
