@@ -5,8 +5,12 @@ import logger from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const _isLocalAuth = env.SUPABASE_URL.includes('dummy');
-const USERS_FILE = path.join(process.cwd(), 'users.json');
+const USERS_FILE = path.resolve(__dirname, '..', 'users.json');
 
 const readUsers = () => {
   if (fs.existsSync(USERS_FILE)) {

@@ -177,7 +177,7 @@ export const listCreatorApplications = async (creatorId) => {
     .from('applications')
     .select(`
       *,
-      opportunity:opportunity_id (id, title, budget_type, budget_amount, deadline, brand:brand_id(username))
+      opportunity:opportunity_id (id, title, budget_type, budget_amount, application_deadline, content_deadline, brand:brand_id(username))
     `)
     .eq('creator_id', creatorId)
     .order('created_at', { ascending: false });

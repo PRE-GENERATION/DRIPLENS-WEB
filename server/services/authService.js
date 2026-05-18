@@ -4,8 +4,12 @@ import { env } from '../config/env.js';
 import fs from 'fs';
 import path from 'path';
 
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // --- Local File-Based Auth (Fallback when no real Supabase) ---
-const USERS_FILE = path.join(process.cwd(), 'users.json');
+const USERS_FILE = path.resolve(__dirname, '..', 'users.json');
 const isLocalAuth = env.SUPABASE_URL.includes('dummy');
 
 const readUsers = () => {

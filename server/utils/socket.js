@@ -13,6 +13,7 @@ export const initSocket = (server, clientUrl) => {
   });
 
   io.on('connection', (socket) => {
+    logger.info(`Socket connection established: ${socket.id}`);
     const userId = socket.handshake.query.userId;
     
     if (userId) {

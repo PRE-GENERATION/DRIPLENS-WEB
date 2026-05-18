@@ -3,55 +3,96 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
-  Zap, 
   LayoutDashboard, 
   Briefcase, 
-  CreditCard, 
-  BarChart3, 
-  MessageSquare,
-  BadgeCheck,
-  Search,
-  CheckCircle2,
+  MessageSquare, 
+  Users, 
+  Settings, 
+  HelpCircle, 
+  Bell, 
+  Search, 
+  Filter, 
+  Calendar,
+  ArrowUpRight,
+  TrendingUp,
+  UserPlus,
+  PenLine,
+  MoreVertical,
+  LogOut,
+  ChevronRight,
   Clock,
+  Mail,
+  Zap,
+  BarChart3,
   IndianRupee,
   MapPin,
   Tag,
   Upload,
   ArrowRight,
-  Box
+  Box,
+  CheckCircle2,
+  BadgeCheck
 } from 'lucide-react';
-import { api } from '../lib/api';
+import { 
+  LineChart, 
+  Line, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer, 
+  AreaChart, 
+  Area 
+} from 'recharts';
+import { format, subMonths, startOfMonth, endOfMonth, subYears } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 import { useSocket } from '../context/SocketContext';
-import { FolderKanban } from 'lucide-react';
 import OverviewContent from '../components/OverviewContent';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Components
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SidebarItem = ({ icon: Icon, label, active, onClick }) => (
+const SectionHeader = ({ title, subtitle, children }) => (
+  <div className="flex items-center justify-between mb-12">
+    <div>
+      <h2 className="text-4xl font-black tracking-tighter uppercase">{title}</h2>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">{subtitle}</p>
+    </div>
+    {children}
+  </div>
+);
+
+const SidebarItem = ({ icon: Icon, label, active, onClick, badge }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center gap-4 p-4 text-xs font-bold uppercase tracking-widest transition-all ${
+    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${
       active 
-        ? 'border-l-[3px] border-[#0044ff] text-black bg-gray-50/50' 
-        : 'border-l-[3px] border-transparent text-gray-400 hover:text-black hover:bg-gray-50'
+        ? 'bg-[#0540F2] text-white shadow-lg shadow-blue-200' 
+        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
     }`}
   >
-    <Icon size={18} />
-    <span className="flex-1 text-left">{label}</span>
+    <Icon size={20} className={active ? 'text-white' : 'text-gray-400 group-hover:text-gray-900'} />
+    <span className="flex-1 text-left font-medium text-sm">{label}</span>
+    {badge && (
+      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+        active ? 'bg-white/20 text-white' : 'bg-red-500 text-white'
+      }`}>
+        {badge}
+      </span>
+    )}
   </button>
 );
 
-const SectionHeader = ({ title, subtitle, children }) => (
-  <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
-    <div>
-      <h2 className="text-4xl font-black tracking-tighter uppercase mb-2">{title}</h2>
-      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{subtitle}</p>
-    </div>
-    <div className="flex gap-2">
-      {children}
+const StatMini = ({ label, value, change, isPositive }) => (
+  <div className="flex flex-col gap-1">
+    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
+    <div className="flex items-end gap-2">
+      <h4 className="text-xl font-bold text-gray-900">{value}</h4>
+      <span className={`text-[10px] font-bold flex items-center mb-1 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+        {isPositive ? '+' : '-'}{change}%
+      </span>
     </div>
   </div>
 );
@@ -61,7 +102,7 @@ const SectionHeader = ({ title, subtitle, children }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CreatorDashboard() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const socket = useSocket();
@@ -117,17 +158,6 @@ export default function CreatorDashboard() {
   const setActiveTab = (tab) => {
     setSearchParams({ tab });
   };
-
-  // Redirect to onboarding if profile not yet completed
-  useEffect(() => {
-    if (user && !user.onboarding_complete) {
-      navigate('/onboarding/step-1', { replace: true });
-    }
-  }, [user, navigate]);
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [activeTab]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -193,23 +223,23 @@ export default function CreatorDashboard() {
         }
         setProjects(projs);
       }
-      // Mock stats
-      setStats({
-        earnings: 125000,
-        completed: 14,
-        rating: 4.9,
-        repeatClients: 6
-      });
     } catch (err) {
-      console.error('Dashboard fetch error:', err);
+      console.error('Error fetching dashboard data:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Sections
-  // ───────────────────────────────────────────────────────────────────────────
+  // Redirect to onboarding if profile not yet completed
+  useEffect(() => {
+    if (user && !user.onboarding_complete) {
+      navigate('/onboarding/step-1', { replace: true });
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [activeTab]);
 
   const ActiveProjects = () => (
     <div className="space-y-1">
@@ -462,20 +492,10 @@ export default function CreatorDashboard() {
     </div>
   );
 
-  const menuItems = [
-    { label: 'Opportunities', onClick: () => setActiveTab('opportunities') },
-    { label: 'Applied', onClick: () => setActiveTab('applied') },
-    { label: 'Projects', onClick: () => setActiveTab('projects') },
-    { label: 'Messages', onClick: () => navigate('/messages') },
-    { label: 'Payments', onClick: () => setActiveTab('payments') },
-    { label: 'Analytics', onClick: () => setActiveTab('analytics') },
-    { label: 'Portfolio', onClick: () => setActiveTab('portfolio') },
-  ];
-
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>Creator Dashboard — Driplens</title>
+        <title>Dashboard | DRIPLENS</title>
       </Helmet>
 
       {/* Main Content */}

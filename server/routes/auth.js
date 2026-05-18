@@ -2,8 +2,12 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const router = express.Router();
-const USERS_FILE = path.join(process.cwd(), 'users.json');
+const USERS_FILE = path.resolve(__dirname, '..', 'users.json');
 
 // Helper to read users
 const readUsers = () => {

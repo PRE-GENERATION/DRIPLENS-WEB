@@ -196,20 +196,14 @@ const AppContent = () => {
 
 function App() {
   return (
-    <HelmetProvider>
-      <AuthProvider>
-        <SocketProvider>
-          <Router>
-            <ScrollToTop />
-            <OnboardingProvider>
-              <ClickSpark sparkColor="var(--color-brand-accent)" sparkSize={10} sparkRadius={15} sparkCount={8} duration={400}>
-                <AppContent />
-              </ClickSpark>
-            </OnboardingProvider>
-          </Router>
-        </SocketProvider>
-      </AuthProvider>
-    </HelmetProvider>
+    <Router>
+      <ScrollToTop />
+      <OnboardingProvider>
+        <ClickSpark sparkColor="var(--color-brand-accent)" sparkSize={10} sparkRadius={15} sparkCount={8} duration={400}>
+          <AppContent />
+        </ClickSpark>
+      </OnboardingProvider>
+    </Router>
   );
 }
 

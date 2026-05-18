@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
-import { useSocket } from '../context/SocketContext';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSocket } from '../context/SocketContext';
+import { api } from '../lib/api';
 
 export default function MessagingPage() {
   const { user: currentUser } = useAuth();
-  const [reqs, setReqs] = useState([
+  const socket = useSocket();
+
+  const [requests, setRequests] = useState([
     { id: '1', project_title: 'Summer Collection Reel', last_message: 'Hey, when can we expect the first draft?', unread_count: 2, brand: { username: 'Urban Threads', avatar_url: 'https://i.pravatar.cc/150?u=1' } },
     { id: '2', project_title: 'Tech Unboxing Series', last_message: 'The lighting looks great in the preview.', unread_count: 0, brand: { username: 'GadgetHub', avatar_url: 'https://i.pravatar.cc/150?u=2' } },
     { id: '3', project_title: 'Fitness App Promo', last_message: 'Can we change the background music?', unread_count: 5, brand: { username: 'FitLife', avatar_url: 'https://i.pravatar.cc/150?u=3' } },
@@ -19,19 +21,17 @@ export default function MessagingPage() {
     { id: '9', project_title: 'Organic Pet Food Intro', last_message: 'Our dogs loved the samples!', unread_count: 0, brand: { username: 'PawPal', avatar_url: 'https://i.pravatar.cc/150?u=9' } },
     { id: '10', project_title: 'Luxury Watch Shoot', last_message: 'The macro shots are stunning.', unread_count: 1, brand: { username: 'EliteTime', avatar_url: 'https://i.pravatar.cc/150?u=10' } }
   ]);
-  const socket = useSocket();
 
-  const [requests,        setRequests]        = useState([]);
   const [activeRequestId, setActiveRequestId] = useState(null);
-  const [messages,        setMessages]        = useState([]);
-  const [newMessage,      setNewMessage]      = useState('');
-  const [isOtherTyping,   setIsOtherTyping]   = useState(false);
-  const [presence,        setPresence]        = useState({});
-  const [search,          setSearch]          = useState('');
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [presence, setPresence] = useState({});
 
+  const messageContainerRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const inputRef       = useRef(null);
   const typingTimeoutRef = useRef(null);
 
   // ── Debounce Search ───────────────────────────────────────────────────────
@@ -62,16 +62,16 @@ export default function MessagingPage() {
         }
         setRequests(reqs);
         if (reqs.length > 0 && !activeRequestId) {
-          // Don't auto-select on mobile maybe? Actually, spec says "When no conversation selected"
+           setActiveRequestId(reqs[0].id);
         }
       } catch (err) {
         console.error('Failed to load conversations:', err);
       }
     };
     load();
-  }, [activeRequestId]);
+  }, []);
 
-  // ── Load messages + Socket listeners ──────────────────────────────────────
+  // ── Load messages ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!activeRequestId) return;
 
@@ -94,8 +94,6 @@ export default function MessagingPage() {
           const otherId = currentUser.role === 'creator' ? req?.brand_id : req?.creator_id;
           socket.emit('message_read', { recipientId: otherId, requestId: activeRequestId });
           await api.patch(`/messages/${activeRequestId}/read`);
-          
-          // Update local unread status if any
           setRequests(prev => prev.map(r => r.id === activeRequestId ? { ...r, unread_count: 0 } : r));
         }
       } catch (err) {
@@ -103,7 +101,7 @@ export default function MessagingPage() {
       }
     };
     load();
-  }, [activeRequestId, socket, currentUser?.role, requests]);
+  }, [activeRequestId, socket, currentUser]);
 
   useEffect(() => {
     if (!socket) return;
@@ -111,12 +109,10 @@ export default function MessagingPage() {
     const handleMessage = (msg) => {
       if (msg.hiring_request_id === activeRequestId) {
         setMessages(prev => [...prev, msg]);
-        
         const req = requests.find(r => r.id === activeRequestId);
         const otherId = currentUser.role === 'creator' ? req?.brand_id : req?.creator_id;
         socket.emit('message_read', { recipientId: otherId, requestId: activeRequestId });
       } else {
-        // Increment unread count for other conversations
         setRequests(prev => prev.map(r => r.id === msg.hiring_request_id ? { ...r, unread_count: (r.unread_count || 0) + 1 } : r));
       }
     };
@@ -129,12 +125,6 @@ export default function MessagingPage() {
       if (requestId === activeRequestId) setIsOtherTyping(false);
     };
 
-    const handleReadReceipt = ({ requestId }) => {
-      if (requestId === activeRequestId) {
-        setMessages(prev => prev.map(m => ({ ...m, is_read: true })));
-      }
-    };
-
     const handlePresence = ({ userId, status }) => {
       setPresence(prev => ({ ...prev, [userId]: status }));
     };
@@ -142,35 +132,22 @@ export default function MessagingPage() {
     socket.on('receive_message', handleMessage);
     socket.on('user_typing', handleTyping);
     socket.on('user_stop_typing', handleStopTyping);
-    socket.on('read_receipt', handleReadReceipt);
     socket.on('presence_update', handlePresence);
 
     return () => {
       socket.off('receive_message', handleMessage);
       socket.off('user_typing', handleTyping);
       socket.off('user_stop_typing', handleStopTyping);
-      socket.off('read_receipt', handleReadReceipt);
       socket.off('presence_update', handlePresence);
     };
-  }, [socket, activeRequestId, requests, currentUser?.role]);
+  }, [socket, activeRequestId, requests, currentUser]);
 
-  // ── Auto-scroll ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isOtherTyping]);
-
-  // ── Handlers ──────────────────────────────────────────────────────────────
   const sendMessage = async (e) => {
     e.preventDefault();
     const content = newMessage.trim();
     if (!content || !activeRequestId) return;
-    setNewMessage('');
-    
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-      handleStopTypingEmit();
-    }
 
+    setNewMessage('');
     try {
       if (activeRequestId.startsWith('mock-req-')) {
         setMessages(prev => [...prev, { id: 'm_mock_new_' + Date.now(), content, sender_id: currentUser?.id, created_at: new Date().toISOString() }]);
@@ -184,66 +161,39 @@ export default function MessagingPage() {
     }
   };
 
-  const handleTypingEmit = () => {
-    if (!socket || !activeRequestId) return;
-    const req = requests.find(r => r.id === activeRequestId);
-    const otherId = currentUser.role === 'creator' ? req?.brand_id : req?.creator_id;
-    socket.emit('typing', { recipientId: otherId, requestId: activeRequestId });
-  };
-
-  const handleStopTypingEmit = () => {
-    if (!socket || !activeRequestId) return;
-    const req = requests.find(r => r.id === activeRequestId);
-    const otherId = currentUser.role === 'creator' ? req?.brand_id : req?.creator_id;
-    socket.emit('stop_typing', { recipientId: otherId, requestId: activeRequestId });
-  };
-
-  const handleInputChange = (e) => {
-    setNewMessage(e.target.value);
-    if (!socket) return;
-    if (!typingTimeoutRef.current) handleTypingEmit();
-    else clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => {
-      handleStopTypingEmit();
-      typingTimeoutRef.current = null;
-    }, 2000);
-  };
-
-  const getOtherParty = (req) => {
-    if (!currentUser) return null;
-    return currentUser.role === 'creator' ? req.brand : req.creator;
-  };
-
   const filteredRequests = useMemo(() => {
     if (!debouncedSearch) return requests;
     const s = debouncedSearch.toLowerCase();
-    return requests.filter(r => {
-      const party = getOtherParty(r);
-      return (party?.username?.toLowerCase().includes(s)) || (r.project_title?.toLowerCase().includes(s));
-    });
-  }, [requests, debouncedSearch, currentUser]);
+    return requests.filter(r => 
+      (r.project_title || '').toLowerCase().includes(s) || 
+      (r.brand?.username || r.creator?.username || '').toLowerCase().includes(s)
+    );
+  }, [requests, debouncedSearch]);
 
-  const activeReq  = requests.find(r => r.id === activeRequestId);
-  const otherParty = activeReq ? getOtherParty(activeReq) : null;
-  const isOnline   = otherParty && presence[otherParty.id] === 'online';
+  const activeReq = requests.find(r => r.id === activeRequestId);
+
+  const formatTime = (isoString) => {
+    if (!isoString) return '';
+    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
-    <div style={{ height: '100%', display: 'flex', background: '#FFF', overflow: 'hidden', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ height: 'calc(100vh - 128px)', display: 'flex', background: '#FFF', overflow: 'hidden', fontFamily: 'Inter, sans-serif' }}>
       <Helmet><title>Messages — Driplens</title></Helmet>
 
       {/* ── Left Sidebar ────────────────────────────────────────────────────── */}
-      <div style={{ width: 320, display: 'flex', flexDirection: 'column', borderRight: '1px solid #E0E0E0' }}>
-        <div style={{ padding: '24px 16px 16px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.15em', color: '#999', marginBottom: 16 }}>MESSAGES</div>
+      <div style={{ width: 320, display: 'flex', flexDirection: 'column', borderRight: '1px solid #F0F0F0' }}>
+        <div style={{ padding: '24px 20px 16px' }}>
+          <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.2em', color: '#000', marginBottom: 20 }}>MESSAGES</div>
           <div style={{ position: 'relative' }}>
             <input 
               type="text" 
-              placeholder="Search conversations..." 
+              placeholder="Search..." 
               value={search}
               onChange={e => setSearch(e.target.value)}
               style={{
-                width: '100%', height: 36, border: '1px solid #E0E0E0', borderRadius: 0,
-                padding: '0 12px', fontSize: 12, outline: 'none', fontStyle: 'italic',
+                width: '100%', height: 40, border: '2px solid #000', borderRadius: 0,
+                padding: '0 12px', fontSize: 12, outline: 'none', fontWeight: 700,
                 color: '#000'
               }}
             />
@@ -252,51 +202,42 @@ export default function MessagingPage() {
 
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {filteredRequests.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', fontSize: 12, color: '#CCC' }}>
-              {requests.length === 0 ? 'No conversations yet.' : 'No results found.'}
+            <div style={{ padding: 40, textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>
+              No conversations
             </div>
           ) : (
-            filteredRequests.map(r => {
-              const party = getOtherParty(r);
-              const isActive = activeRequestId === r.id;
-              const userOnline = party && presence[party.id] === 'online';
-              const hasUnread = (r.unread_count || 0) > 0;
+            filteredRequests.map(req => {
+              const isActive = activeRequestId === req.id;
+              const hasUnread = req.unread_count > 0;
+              const otherUser = currentUser?.role === 'creator' ? req.brand : req.creator;
               
               return (
                 <div 
-                  key={r.id} 
-                  onClick={() => setActiveRequestId(r.id)}
+                  key={req.id} 
+                  onClick={() => setActiveRequestId(req.id)}
                   style={{
-                    height: 64, padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12,
-                    cursor: 'pointer', borderBottom: '1px solid #F5F5F5', position: 'relative',
-                    background: isActive ? '#F8F8F8' : 'transparent',
-                    transition: 'background 150ms ease'
+                    padding: '20px', display: 'flex', alignItems: 'center', gap: 12,
+                    cursor: 'pointer', borderBottom: '1px solid #F0F0F0', position: 'relative',
+                    background: isActive ? '#000' : 'transparent',
+                    color: isActive ? '#FFF' : '#000',
+                    transition: 'all 150ms ease'
                   }}
-                  className="conv-row"
                 >
-                  {isActive && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: '#000' }} />}
-                  
-                  <div style={{ position: 'relative', flexShrink: 0 }}>
-                    {party?.avatar_url ? (
-                      <img src={party.avatar_url} style={{ width: 36, height: 36, objectFit: 'cover' }} alt="" />
-                    ) : (
-                      <div style={{ width: 36, height: 36, background: '#F0F0F0' }} />
-                    )}
-                    {userOnline && <div style={{ position: 'absolute', top: -2, right: -2, width: 6, height: 6, background: '#22C55E' }} />}
+                  <div style={{ width: 44, height: 44, background: isActive ? '#222' : '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, border: '1px solid #000' }}>
+                    {otherUser?.username?.charAt(0).toUpperCase()}
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                      <span style={{ fontSize: 13, fontWeight: hasUnread ? 600 : 500, color: '#000' }}>{party?.username || 'Unknown'}</span>
-                      <span style={{ fontSize: 10, color: '#CCC' }}>12:45 PM</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 2 }}>
+                      <span style={{ fontSize: 12, fontWeight: 900, textTransform: 'uppercase' }}>{otherUser?.username}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ fontSize: 12, color: hasUnread ? '#333' : '#999', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {r.project_title}
-                      </div>
-                      {hasUnread && <div style={{ width: 6, height: 6, background: '#000', flexShrink: 0, marginLeft: 8 }} />}
+                    <div style={{ fontSize: 10, fontWeight: 700, opacity: isActive ? 0.7 : 0.4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {req.project_title}
                     </div>
                   </div>
+                  {hasUnread && !isActive && (
+                    <div style={{ width: 8, height: 8, background: '#0044ff', borderRadius: '50%' }} />
+                  )}
                 </div>
               );
             })
@@ -305,122 +246,124 @@ export default function MessagingPage() {
       </div>
 
       {/* ── Right Chat Panel ────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#F9FAFB' }}>
         {!activeReq ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.2em', color: '#CCC' }}>SELECT A CONVERSATION</div>
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+             <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.3em', color: '#DDD' }}>SELECT A CONVERSATION</div>
           </div>
         ) : (
           <>
             {/* Header */}
-            <div style={{ height: 56, padding: '0 20px', borderBottom: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', gap: 12 }}>
-              {otherParty?.avatar_url ? (
-                <img src={otherParty.avatar_url} style={{ width: 32, height: 32, objectFit: 'cover' }} alt="" />
-              ) : (
-                <div style={{ width: 32, height: 32, background: '#F0F0F0' }} />
-              )}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#000' }}>{otherParty?.username}</div>
-                <div style={{ fontSize: 11, color: isOnline ? '#22C55E' : '#999' }}>{isOnline ? 'Active now' : 'Away'}</div>
+            <div style={{ padding: '20px 32px', borderBottom: '1px solid #F0F0F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#FFF' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, background: '#000', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900 }}>
+                  {(currentUser?.role === 'creator' ? activeReq.brand : activeReq.creator)?.username?.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 900, textTransform: 'uppercase' }}>{(currentUser?.role === 'creator' ? activeReq.brand : activeReq.creator)?.username}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: '#0044ff', textTransform: 'uppercase' }}>{activeReq.project_title}</div>
+                </div>
               </div>
             </div>
 
             {/* Messages Area */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div 
+              ref={messageContainerRef}
+              style={{ 
+                flex: 1, 
+                padding: '32px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: 16,
+                overflowY: 'auto'
+              }}
+            >
               <AnimatePresence initial={false}>
                 {messages.map((m, i) => {
                   const isMe = m.sender_id === currentUser?.id;
-                  const isLast = i === messages.length - 1;
                   return (
                     <motion.div 
                       key={m.id || i}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '70%' }}
+                      style={{ 
+                        alignSelf: isMe ? 'flex-end' : 'flex-start', 
+                        maxWidth: '65%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: isMe ? 'flex-end' : 'flex-start'
+                      }}
                     >
                       <div style={{ 
-                        padding: '10px 14px', 
-                        background: isMe ? '#000' : '#F5F5F5',
+                        padding: '14px 18px', 
+                        background: isMe ? '#000' : '#FFF',
                         color: isMe ? '#FFF' : '#000',
-                        fontSize: 13, lineHeight: 1.5,
+                        fontSize: 13, 
+                        fontWeight: 600,
+                        lineHeight: 1.6,
+                        border: '1px solid #000',
+                        boxShadow: isMe ? '4px 4px 0 #0044ff' : '4px 4px 0 #000'
                       }}>
                         {m.content}
                       </div>
-                      <div style={{ marginTop: 4, display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: 10, color: '#CCC' }}>
-                          {m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
-                        </span>
-                        {isMe && isLast && m.is_read && (
-                          <span style={{ fontSize: 10, color: '#CCC' }}>Seen</span>
-                        )}
-                      </div>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: '#999', marginTop: 8, textTransform: 'uppercase' }}>
+                        {formatTime(m.created_at)}
+                      </span>
                     </motion.div>
                   );
                 })}
               </AnimatePresence>
-
-              {isOtherTyping && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  style={{ alignSelf: 'flex-start' }}
-                >
-                  <div style={{ display: 'flex', gap: 4, padding: '10px 0' }}>
-                    {[0, 1, 2].map(i => (
-                      <motion.div
-                        key={i}
-                        animate={{ opacity: [0.3, 1, 0.3] }}
-                        transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.2 }}
-                        style={{ width: 4, height: 4, background: '#999' }}
-                      />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
               <div ref={messagesEndRef} />
             </div>
 
             {/* Input Bar */}
-            <div style={{ height: 56, borderTop: '1px solid #E0E0E0', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 16 }}>
-              <div style={{ color: '#999', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-              </div>
-              <form onSubmit={sendMessage} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            <div style={{ padding: '24px 32px', background: '#FFF', borderTop: '1px solid #F0F0F0' }}>
+              <form onSubmit={sendMessage} style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 16
+              }}>
                 <input 
-                  ref={inputRef}
                   type="text" 
                   value={newMessage}
-                  onChange={handleInputChange}
-                  placeholder="Write a message..."
-                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: 13, background: 'transparent' }}
+                  onChange={e => setNewMessage(e.target.value)}
+                  placeholder="Type your message..."
+                  style={{ 
+                    flex: 1, 
+                    border: '2px solid #000', 
+                    outline: 'none', 
+                    fontSize: 12, 
+                    fontWeight: 700,
+                    background: '#F5F5F5',
+                    height: 50,
+                    padding: '0 20px'
+                  }}
                 />
                 <button 
                   type="submit" 
                   disabled={!newMessage.trim()}
                   style={{ 
-                    background: 'none', border: 'none', padding: '0 0 0 16px',
-                    fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-                    color: newMessage.trim() ? '#000' : '#CCC',
+                    background: '#000', 
+                    border: 'none', 
+                    height: 50,
+                    padding: '0 32px',
+                    color: '#FFF',
+                    fontSize: 10,
+                    fontWeight: 900,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.1em',
                     cursor: newMessage.trim() ? 'pointer' : 'default',
-                    transition: 'color 200ms'
+                    opacity: newMessage.trim() ? 1 : 0.5,
+                    transition: 'all 200ms'
                   }}
                 >
-                  SEND
+                  Send
                 </button>
               </form>
             </div>
           </>
         )}
       </div>
-
-      <style>{`
-        .conv-row:hover { background: #FAFAFA !important; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #EEE; }
-        ::-webkit-scrollbar-thumb:hover { background: #DDD; }
-      `}</style>
     </div>
   );
 }
