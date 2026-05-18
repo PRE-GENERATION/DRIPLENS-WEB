@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:5001');
 const PEXELS_API_KEY = import.meta.env.VITE_PEXELS_API_KEY;
 const PIXABAY_API_KEY = import.meta.env.VITE_PIXABAY_API_KEY;
 

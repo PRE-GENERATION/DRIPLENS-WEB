@@ -19,7 +19,7 @@ router.get('/:requestId', requireAuth, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     res.json({ messages: data });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error fetching messages' });
   }
 });
@@ -44,7 +44,7 @@ router.post('/:requestId', requireAuth, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     res.status(201).json({ message: data });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error sending message' });
   }
 });
@@ -61,7 +61,7 @@ router.patch('/:requestId/read', requireAuth, async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     res.json({ success: true });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error updating messages' });
   }
 });

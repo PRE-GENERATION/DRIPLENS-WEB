@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
 
     res.json({ creators: data });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error fetching creators' });
   }
 });
@@ -50,7 +50,7 @@ router.get('/:id', async (req, res) => {
     if (error) return res.status(404).json({ error: 'Creator not found' });
 
     res.json({ creator: data });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error fetching creator' });
   }
 });
@@ -75,7 +75,7 @@ router.patch('/profile', requireAuth, requireRole('creator'), async (req, res) =
     }
 
     res.json({ profile: data });
-  } catch (err) {
+  } catch (_err) {
     res.status(500).json({ error: 'Server error updating profile' });
   }
 });
@@ -96,7 +96,7 @@ router.patch('/:id', async (req, res) => {
        return res.json({ profile: { id: req.params.id, ...payload } });
     }
     res.json({ profile: data });
-  } catch (err) {
+  } catch (_err) {
     res.json({ profile: { id: req.params.id, ...req.body } });
   }
 });

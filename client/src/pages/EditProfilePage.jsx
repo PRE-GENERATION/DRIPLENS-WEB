@@ -295,9 +295,13 @@ export default function EditProfilePage() {
           min_budget:     Number(formData.min_budget),
           max_budget:     Number(formData.max_budget),
           follower_count: Number(formData.follower_count),
-          platforms:      formData.platforms,
+          platforms: Array.isArray(formData.platforms)
+            ? formData.platforms.filter(Boolean)
+            : (formData.platforms ? [formData.platforms] : []),
           is_available:   formData.is_available,
-          tags:           formData.tags
+          tags: Array.isArray(formData.tags)
+            ? formData.tags.filter(Boolean)
+            : (formData.tags ? [formData.tags] : [])
         })
       };
 

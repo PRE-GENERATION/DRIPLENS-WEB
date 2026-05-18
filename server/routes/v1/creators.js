@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { validate } from '../../middleware/validate.js';
-import { requireAuth, requireRole } from '../../middleware/auth.js';
+import { requireAuth } from '../../middleware/auth.js';
 import { apiLimiter } from '../../middleware/rateLimiter.js';
-import { listCreatorsSchema, updateProfileSchema } from '../../schemas/creatorSchemas.js';
+import { listCreatorsSchema, updateCreatorProfileSchema } from '../../schemas/creatorSchemas.js';
 import * as creatorService from '../../services/creatorService.js';
 
 const router = Router();
@@ -22,11 +22,15 @@ router.get('/:id', apiLimiter, async (req, res, next) => {
   } catch (err) { console.error(err); next(err); }
 });
 
-router.patch('/profile', requireAuth, validate(updateProfileSchema), async (req, res, next) => {
+router.patch('/profile', requireAuth, validate(updateCreatorProfileSchema), async (req, res, next) => {
   try {
     const profile = await creatorService.updateProfile(req.user.id, req.body);
     res.json({ success: true, data: { profile } });
-  } catch (err) { console.error(err); next(err); }
+  } catch (err) {
+    console.error('PATCH /profile error:', err.message, err.details, err.hint);
+    next(err);
+  }
 });
+
 
 export default router;

@@ -25,9 +25,9 @@ app.use(helmet({
 
 // ── CORS — whitelist only your client URL ─────────────────────
 app.use(cors({
-  origin:      env.CLIENT_URL,
+  origin: env.CLIENT_URL === '*' ? true : [env.CLIENT_URL, 'http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
-  methods:     ['GET', 'POST', 'PATCH', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -60,12 +60,14 @@ app.use(errorHandler);
 
 // ── Boot ──────────────────────────────────────────────────────
 const PORT = env.PORT;
-httpServer.listen(PORT, () => {
-  logger.info(`Server started`, { port: PORT, env: env.NODE_ENV });
-});
+if (!process.env.VERCEL) {
+  httpServer.listen(PORT, () => {
+    logger.info(`Server started`, { port: PORT, env: env.NODE_ENV });
+  });
+}
 
 
-export default app; // needed for supertest in tests
+export default app; // needed for supertest in tests and Vercel serverless functions
 
 process.on('exit', (code) => {
   console.log(`Process exiting with code: ${code}`);
@@ -80,7 +82,9 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// Workaround for mysterious exit with code 0
-setInterval(() => {}, 1000);
+// Workaround for mysterious exit with code 0 (only local dev)
+if (!process.env.VERCEL) {
+  setInterval(() => {}, 1000);
+}
 
 

@@ -1,0 +1,21 @@
+-- Add missing columns to profiles table for creator onboarding
+alter table public.profiles
+  add column if not exists display_name        text,
+  add column if not exists tagline             text,
+  add column if not exists bio                 text,
+  add column if not exists category            text,
+  add column if not exists platforms           text[],
+  add column if not exists platform_urls       jsonb,
+  add column if not exists primary_platform    text,
+  add column if not exists follower_count      integer default 0,
+  add column if not exists audience_tier       text,
+  add column if not exists tags                text[],
+  add column if not exists qualifications      text[],
+  add column if not exists past_work           text[],
+  add column if not exists min_budget          numeric default 0,
+  add column if not exists max_budget          numeric default 0,
+  add column if not exists is_available        boolean default true,
+  add column if not exists preferred_work_type text,
+  add column if not exists avatar_url          text,
+  add column if not exists location            text,
+  add column if not exists onboarding_complete boolean default false;

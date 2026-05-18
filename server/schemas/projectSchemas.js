@@ -26,6 +26,7 @@ export const submitDeliverableSchema = z.object({
   mime_type:   z.string().max(100).optional(),
   storage_path: z.string().optional(),
   notes:       z.string().max(2000).optional(),
+  type:        z.enum(['draft', 'final_link', 'raw_files']).default('draft').optional(),
 });
 
 // ── Revision Request ──────────────────────────────────────────────────────
@@ -33,4 +34,10 @@ export const submitDeliverableSchema = z.object({
 export const requestRevisionSchema = z.object({
   deliverable_id: z.string().uuid(),
   feedback:       z.string().min(10).max(3000),
+});
+
+// ── Dispute ──────────────────────────────────────────────────────────────────
+
+export const raiseDisputeSchema = z.object({
+  reason: z.string().min(10).max(3000),
 });

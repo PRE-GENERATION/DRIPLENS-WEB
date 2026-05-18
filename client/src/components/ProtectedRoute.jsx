@@ -5,7 +5,6 @@ export default function ProtectedRoute({ children, requiredRole }) {
   const { isLoggedIn, user, loading } = useAuth();
   const location = useLocation();
 
-  // Wait for auth rehydration before deciding
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -14,13 +13,24 @@ export default function ProtectedRoute({ children, requiredRole }) {
     );
   }
 
+  // Not logged in → send to auth, remember where they came from
   if (!isLoggedIn) {
-    // Preserve where they were going so we can redirect after login
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
+  // Logged in but onboarding not done → send to onboarding
+  // (skip this check if they're already on the onboarding page)
+  if (
+    user?.role === 'creator' &&
+    !user?.onboarding_complete &&
+    !location.pathname.startsWith('/onboarding')
+  ) {
+    return <Navigate to="/onboarding/step-1" replace />;
+  }
+
+  // Wrong role for this route → send to their dashboard
   if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to={`/dashboard/${user.role}`} replace />;
+    return <Navigate to={`/dashboard/${user?.role}`} replace />;
   }
 
   return children;

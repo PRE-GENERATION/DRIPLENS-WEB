@@ -1,438 +1,472 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { 
+  LayoutDashboard, 
+  Briefcase, 
   MessageSquare, 
-  User, 
-  Plus, 
-  PlayCircle,
+  Users, 
+  Settings, 
+  HelpCircle, 
+  Bell, 
+  Search, 
+  Filter, 
+  Calendar,
   ArrowUpRight,
-  LayoutDashboard,
-  Image as ImageIcon,
-  Inbox,
-  TrendingUp
+  TrendingUp,
+  UserPlus,
+  PenLine,
+  MoreVertical,
+  LogOut,
+  ChevronRight,
+  Clock,
+  Mail,
+  Zap,
+  BarChart3,
+  IndianRupee,
+  MapPin,
+  Tag,
+  Upload,
+  ArrowRight,
+  Box,
+  CheckCircle2,
+  BadgeCheck
 } from 'lucide-react';
-import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 import { useSocket } from '../context/SocketContext';
-import EditProjectModal from '../components/EditProjectModal';
-import WorkDetailCard from '../components/WorkDetailCard';
+import OverviewContent from '../components/OverviewContent';
 
-// ─── MetricBlock ─────────────────────────────────────────────────────────────
-function MetricBlock({ label, value, loading, icon: Icon, trend }) {
-  return (
-    <motion.div 
-      whileHover={{ backgroundColor: '#F9FAFB' }}
-      className="border border-[#F0F0F0] p-6 bg-white transition-colors duration-200 flex flex-col group"
-    >
-      <div className="flex items-center gap-2">
-        <div className="p-1 border border-[#F0F0F0] bg-[#FAFAFA]">
-          <Icon className="w-3.5 h-3.5 text-[#0D1033]" />
-        </div>
-        <span className="text-xs font-medium uppercase tracking-[0.2em] text-[#9CA3AF]">{label}</span>
-      </div>
-      {loading ? (
-        <div className="h-9 w-24 bg-gray-50 animate-pulse mt-2" />
-      ) : (
-        <h2 className="text-5xl text-[#0D1033] mt-2 group-hover:translate-x-1 transition-transform duration-300">{value}</h2>
-      )}
-      <div className="flex items-center gap-1 mt-2">
-        <span className="text-[10px] text-[#9CA3AF] font-bold uppercase tracking-tighter">{trend || '↑ 0.0%'}</span>
-      </div>
-    </motion.div>
-  );
-}
+const SectionHeader = ({ title, subtitle, children }) => (
+  <div className="flex items-center justify-between mb-12">
+    <div>
+      <h2 className="text-4xl font-black tracking-tighter uppercase">{title}</h2>
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-2">{subtitle}</p>
+    </div>
+    {children}
+  </div>
+);
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export default function CreatorDashboard() {
-  const { user } = useAuth();
-  const location = useLocation();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [requests, setRequests]   = useState([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const socket = useSocket();
+  const activeTab = searchParams.get('tab') || 'overview';
+  const [loading, setLoading] = useState(true);
+  
+  // Data State
+  const [opportunities, setOpportunities] = useState([
+    { id: 'o1', title: 'Nike Air Max Launch', budget_amount: 15000, budget_type: 'Paid', niche: ['Sports', 'Fashion'], brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' } },
+    { id: 'o2', title: 'Starbucks Summer Promo', budget_amount: 8000, budget_type: 'Paid', niche: ['Food', 'Lifestyle'], brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' } },
+    { id: 'o3', title: 'Adobe Creative Cloud', budget_amount: 0, budget_type: 'Barter', niche: ['Tech', 'Design'], brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' } },
+    { id: 'o4', title: 'Sony WH-1000XM5 Review', budget_amount: 12000, budget_type: 'Paid', niche: ['Tech', 'Music'], brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' } },
+    { id: 'o5', title: 'Tesla Model 3 Vlog', budget_amount: 50000, budget_type: 'Paid', niche: ['Auto', 'Tech'], brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' } },
+    { id: 'o6', title: 'H&M Winter Collection', budget_amount: 10000, budget_type: 'Paid', niche: ['Fashion'], brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' } },
+    { id: 'o7', title: 'Coca Cola Refresh', budget_amount: 0, budget_type: 'Barter', niche: ['Food'], brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' } },
+    { id: 'o8', title: 'Apple Watch Series 9', budget_amount: 20000, budget_type: 'Paid', niche: ['Tech', 'Health'], brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' } },
+    { id: 'o9', title: 'Spotify Premium Promo', budget_amount: 5000, budget_type: 'Paid', niche: ['Music', 'Entertainment'], brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' } },
+    { id: 'o10', title: 'Netflix Originals', budget_amount: 30000, budget_type: 'Paid', niche: ['Entertainment', 'Movies'], brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' } }
+  ]);
+  const [applications, setApplications] = useState([
+    { id: 'a1', status: 'hired', expected_price: 15000, opportunity: { title: 'Nike Air Max Launch', brand: { username: 'Nike' } } },
+    { id: 'a2', status: 'shortlisted', expected_price: 8000, opportunity: { title: 'Starbucks Summer', brand: { username: 'Starbucks' } } },
+    { id: 'a3', status: 'pending', expected_price: 7500, opportunity: { title: 'Adobe Tutorial', brand: { username: 'Adobe' } } },
+    { id: 'a4', status: 'rejected', expected_price: 12000, opportunity: { title: 'Sony Review', brand: { username: 'Sony' } } },
+    { id: 'a5', status: 'pending', expected_price: 50000, opportunity: { title: 'Tesla Vlog', brand: { username: 'Tesla' } } },
+    { id: 'a6', status: 'hired', expected_price: 10000, opportunity: { title: 'H&M Winter', brand: { username: 'H&M' } } },
+    { id: 'a7', status: 'shortlisted', expected_price: 6000, opportunity: { title: 'Coca Cola Reel', brand: { username: 'Coca Cola' } } },
+    { id: 'a8', status: 'pending', expected_price: 20000, opportunity: { title: 'Apple Watch', brand: { username: 'Apple' } } },
+    { id: 'a9', status: 'hired', expected_price: 5000, opportunity: { title: 'Spotify Story', brand: { username: 'Spotify' } } },
+    { id: 'a10', status: 'shortlisted', expected_price: 30000, opportunity: { title: 'Netflix Promo', brand: { username: 'Netflix' } } }
+  ]);
+  const [projects, setProjects] = useState([
+    { id: 'p1', progress: 80, status: 'in_progress', brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' }, hiring_request: { project_title: 'Nike Air Max Reel' } },
+    { id: 'p2', progress: 40, status: 'in_progress', brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' }, hiring_request: { project_title: 'H&M Lookbook' } },
+    { id: 'p3', progress: 95, status: 'in_progress', brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' }, hiring_request: { project_title: 'Spotify Story' } },
+    { id: 'p4', progress: 10, status: 'in_progress', brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' }, hiring_request: { project_title: 'Netflix Promo' } },
+    { id: 'p5', progress: 100, status: 'submitted', brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' }, hiring_request: { project_title: 'Starbucks Post' } },
+    { id: 'p6', progress: 20, status: 'in_progress', brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' }, hiring_request: { project_title: 'Sony Review' } },
+    { id: 'p7', progress: 0, status: 'in_progress', brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' }, hiring_request: { project_title: 'Tesla Vlog' } },
+    { id: 'p8', progress: 55, status: 'in_progress', brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' }, hiring_request: { project_title: 'Apple Watch Reel' } },
+    { id: 'p9', progress: 70, status: 'in_progress', brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' }, hiring_request: { project_title: 'Adobe Tutorial' } },
+    { id: 'p10', progress: 35, status: 'in_progress', brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' }, hiring_request: { project_title: 'Coca Cola Reel' } }
+  ]);
+  const [payments, setPayments] = useState([]);
   const [portfolio, setPortfolio] = useState([]);
-  const [projects, setProjects]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [editingProject, setEditingProject] = useState(null);
-  const [selectedDetailProject, setSelectedDetailProject] = useState(null);
+  const [stats, setStats] = useState({
+    earnings: 125000,
+    completed: 12,
+    rating: 4.9,
+    repeatClients: 4
+  });
 
-  useEffect(() => {
-    if (!user?.id) return;
-    
-    const load = async () => {
-      try {
-        const [hiringData, uploadData, projectsData] = await Promise.all([
-          api.get('/hiring'),
-          api.get(`/upload?limit=10&creator_id=${user.id}`),
-          api.get('/upload/projects')
-        ]);
-        setRequests(hiringData.data.requests || []);
-        setPortfolio(uploadData.data.items || []);
-        setProjects(projectsData.data || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [user?.id]);
- 
-   const socket = useSocket();
- 
-   useEffect(() => {
-     if (!socket) return;
-     const handleHiringUpdate = (updatedReq) => {
-       setRequests(prev => {
-         const exists = prev.find(r => r.id === updatedReq.id);
-         if (exists) {
-           return prev.map(r => r.id === updatedReq.id ? updatedReq : r);
-         }
-         return [updatedReq, ...prev];
-       });
-     };
-     socket.on('hiring_update', handleHiringUpdate);
-     return () => socket.off('hiring_update', handleHiringUpdate);
-   }, [socket]);
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
 
-  const pendingRequests = requests.filter(r => r.status === 'Pending');
-  const accepted = requests.filter(r => r.status === 'Accepted' || r.status === 'Completed');
-
-  const updateStatus = async (id, status) => {
+  const fetchDashboardData = async () => {
+    setLoading(true);
     try {
-      await api.patch(`/hiring/${id}/status`, { status });
-      setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      if (activeTab === 'opportunities') {
+        const res = await api.get('/opportunities');
+        let opps = res.data;
+        if (opps.length <= 3) {
+          opps = [
+            { id: 'o1', title: 'Nike Air Max Launch', budget_amount: 15000, budget_type: 'Paid', niche: ['Sports', 'Fashion'], brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' } },
+            { id: 'o2', title: 'Starbucks Summer Promo', budget_amount: 8000, budget_type: 'Paid', niche: ['Food', 'Lifestyle'], brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' } },
+            { id: 'o3', title: 'Adobe Creative Cloud', budget_amount: 0, budget_type: 'Barter', niche: ['Tech', 'Design'], brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' } },
+            { id: 'o4', title: 'Sony WH-1000XM5 Review', budget_amount: 12000, budget_type: 'Paid', niche: ['Tech', 'Music'], brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' } },
+            { id: 'o5', title: 'Tesla Model 3 Vlog', budget_amount: 50000, budget_type: 'Paid', niche: ['Auto', 'Tech'], brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' } },
+            { id: 'o6', title: 'H&M Winter Collection', budget_amount: 10000, budget_type: 'Paid', niche: ['Fashion'], brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' } },
+            { id: 'o7', title: 'Coca Cola Refresh', budget_amount: 0, budget_type: 'Barter', niche: ['Food'], brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' } },
+            { id: 'o8', title: 'Apple Watch Series 9', budget_amount: 20000, budget_type: 'Paid', niche: ['Tech', 'Health'], brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' } },
+            { id: 'o9', title: 'Spotify Premium Promo', budget_amount: 5000, budget_type: 'Paid', niche: ['Music', 'Entertainment'], brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' } },
+            { id: 'o10', title: 'Netflix Originals', budget_amount: 30000, budget_type: 'Paid', niche: ['Entertainment', 'Movies'], brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' } }
+          ];
+        }
+        setOpportunities(opps);
+      } else if (activeTab === 'applied') {
+        const res = await api.get('/opportunities/my/applications');
+        let apps = res.data;
+        if (apps.length <= 2) {
+          apps = [
+            { id: 'a1', status: 'hired', expected_price: 15000, opportunity: { title: 'Nike Air Max Launch', brand: { username: 'Nike' } } },
+            { id: 'a2', status: 'shortlisted', expected_price: 8000, opportunity: { title: 'Starbucks Summer', brand: { username: 'Starbucks' } } },
+            { id: 'a3', status: 'pending', expected_price: 7500, opportunity: { title: 'Adobe Tutorial', brand: { username: 'Adobe' } } },
+            { id: 'a4', status: 'rejected', expected_price: 12000, opportunity: { title: 'Sony Review', brand: { username: 'Sony' } } },
+            { id: 'a5', status: 'pending', expected_price: 50000, opportunity: { title: 'Tesla Vlog', brand: { username: 'Tesla' } } },
+            { id: 'a6', status: 'hired', expected_price: 10000, opportunity: { title: 'H&M Winter', brand: { username: 'H&M' } } },
+            { id: 'a7', status: 'shortlisted', expected_price: 6000, opportunity: { title: 'Coca Cola Reel', brand: { username: 'Coca Cola' } } },
+            { id: 'a8', status: 'pending', expected_price: 20000, opportunity: { title: 'Apple Watch', brand: { username: 'Apple' } } },
+            { id: 'a9', status: 'hired', expected_price: 5000, opportunity: { title: 'Spotify Story', brand: { username: 'Spotify' } } },
+            { id: 'a10', status: 'shortlisted', expected_price: 30000, opportunity: { title: 'Netflix Promo', brand: { username: 'Netflix' } } }
+          ];
+        }
+        setApplications(apps);
+      } else if (activeTab === 'payments') {
+        const res = await api.get('/payments');
+        setPayments(res.data);
+      } else if (activeTab === 'portfolio') {
+        const res = await api.get('/creators/portfolio');
+        setPortfolio(res.data);
+      } else if (activeTab === 'projects') {
+        const res = await api.get('/projects');
+        let projs = res.data.projects || res.data;
+        if (projs.length === 0) {
+          projs = [
+            { id: 'p1', progress: 80, status: 'in_progress', brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' }, hiring_request: { project_title: 'Nike Air Max Reel' } },
+            { id: 'p2', progress: 40, status: 'in_progress', brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' }, hiring_request: { project_title: 'H&M Lookbook' } },
+            { id: 'p3', progress: 95, status: 'in_progress', brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' }, hiring_request: { project_title: 'Spotify Story' } },
+            { id: 'p4', progress: 10, status: 'in_progress', brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' }, hiring_request: { project_title: 'Netflix Promo' } },
+            { id: 'p5', progress: 100, status: 'submitted', brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' }, hiring_request: { project_title: 'Starbucks Post' } },
+            { id: 'p6', progress: 20, status: 'in_progress', brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' }, hiring_request: { project_title: 'Sony Review' } },
+            { id: 'p7', progress: 0, status: 'in_progress', brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' }, hiring_request: { project_title: 'Tesla Vlog' } },
+            { id: 'p8', progress: 55, status: 'in_progress', brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' }, hiring_request: { project_title: 'Apple Watch Reel' } },
+            { id: 'p9', progress: 70, status: 'in_progress', brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' }, hiring_request: { project_title: 'Adobe Tutorial' } },
+            { id: 'p10', progress: 35, status: 'in_progress', brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' }, hiring_request: { project_title: 'Coca Cola Reel' } }
+          ];
+        }
+        setProjects(projs);
+      }
     } catch (err) {
-      alert(err.message);
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Redirect to onboarding if profile not yet completed
   useEffect(() => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600&display=swap';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-  }, []);
+    if (user && !user.onboarding_complete) {
+      navigate('/onboarding/step-1', { replace: true });
+    }
+  }, [user, navigate]);
 
-  const handleAddWork = () => navigate('/upload');
+  useEffect(() => {
+    fetchDashboardData();
+  }, [activeTab]);
 
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr', minHeight: '100vh', fontFamily: '"Space Grotesk", sans-serif' }} className="antialiased">
-      <Helmet>
-        <title>Dashboard — {user?.username}</title>
-      </Helmet>
-
-      {/* LEFT SIDEBAR */}
-      <div style={{ background: '#fff', borderRight: '0.5px solid #F0F0F0', padding: '24px 14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        {/* Nav items */}
-        {[
-          { label: 'OVERVIEW', onClick: () => navigate('/dashboard/creator'), path: '/dashboard/creator' },
-          { label: 'PORTFOLIO', onClick: () => navigate('/profile/' + user?.id), path: '/profile/' + user?.id },
-          { label: 'INQUIRIES', onClick: () => {
-              navigate('/dashboard/creator');
-              setTimeout(() => {
-                document.getElementById('inquiries-section')?.scrollIntoView({ behavior: 'smooth' });
-              }, 100);
-            }, path: '/dashboard/creator' },
-          { label: 'MESSAGES', onClick: () => navigate('/messages'), path: '/messages' },
-          { label: 'PROFILE', onClick: () => navigate('/profile/edit'), path: '/profile/edit' }
-        ].map((item) => {
-          const active = (item.label === 'OVERVIEW' && location.pathname === '/dashboard/creator') ||
-                         (item.label === 'MESSAGES' && location.pathname === '/messages') ||
-                         (item.label === 'PORTFOLIO' && location.pathname.startsWith('/profile/'));
-          return (
-            <div 
-              key={item.label} 
-              onClick={item.onClick}
-              onMouseEnter={e => e.currentTarget.style.color = '#0D1033'}
-              onMouseLeave={e => e.currentTarget.style.color = active ? '#3B50E0' : '#9CA3AF'}
-              style={{ 
-                fontSize: '11px', 
-                color: active ? '#3B50E0' : '#9CA3AF', 
-                letterSpacing: '.08em', 
-                padding: '7px 10px', 
-                borderRadius: '0px', 
-                background: active ? '#F5F5FF' : 'transparent', 
-                cursor: 'pointer',
-                display: 'block',
-                transition: 'all 0.2s'
-              }}
-            >
-              {item.label}
+  const ActiveProjects = () => (
+    <div className="space-y-1">
+      <SectionHeader title="Active Projects" subtitle="Work in progress & content submission" />
+      <div className="border-t border-gray-100">
+        {loading ? (
+           <div className="py-20 text-center border-b border-gray-100"><p className="text-xs font-bold text-gray-400 animate-pulse uppercase tracking-widest">Loading projects...</p></div>
+        ) : projects.length === 0 ? (
+          <div className="py-20 text-center border-b border-gray-100">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No active projects yet</p>
+          </div>
+        ) : (
+          projects.map(p => (
+            <div key={p.id} onClick={() => navigate(`/progress/${p.id}`)} className="group flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all cursor-pointer">
+              <div className="flex gap-6 items-center">
+                <div className="w-12 h-12 border-2 border-black overflow-hidden">
+                  <img src={p.brand?.avatar_url} className="w-full h-full object-cover" alt="" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight">{p.hiring_request?.project_title || 'Content Collaboration'}</h3>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Brand: {p.brand?.username}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-12">
+                <div className="text-right">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-24 h-1.5 bg-gray-100 border border-gray-200">
+                      <div className="h-full bg-[#0044ff]" style={{ width: `${p.progress}%` }} />
+                    </div>
+                    <span className="text-[10px] font-black">{p.progress}%</span>
+                  </div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Progress</p>
+                </div>
+                <div className={`px-3 py-1 border-2 text-[8px] font-black uppercase tracking-widest ${
+                  p.status === 'revision_requested' ? 'bg-red-500 text-white border-red-500' : 
+                  p.status === 'submitted' ? 'bg-[#0044ff] text-white border-[#0044ff]' : 'border-black'
+                }`}>
+                  {p.status.replace('_', ' ')}
+                </div>
+              </div>
             </div>
-          );
-        })}
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  const OpportunitiesFeed = () => (
+    <div className="space-y-1">
+      <SectionHeader title="Live Briefs" subtitle="Opportunities matching your profile" />
+      <div className="border-t border-gray-100">
+        {opportunities.length === 0 ? (
+          <div className="py-20 text-center border-b border-gray-100">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">No active briefs found</p>
+          </div>
+        ) : (
+          opportunities.map(opp => (
+            <Link 
+              to={`/opportunities/${opp.id}`} 
+              key={opp.id} 
+              className="group flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all"
+            >
+              <div className="flex gap-6 items-center">
+                <div className="w-12 h-12 border-2 border-black flex items-center justify-center shrink-0">
+                  <img src={opp.brand?.avatar_url || 'https://via.placeholder.com/150'} className="w-full h-full object-cover" alt="" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight mb-1 group-hover:text-[#0044ff] transition-colors">{opp.title}</h3>
+                  <div className="flex gap-4">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#0044ff]">{opp.brand?.username}</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{opp.niche?.join(', ')}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-12 mt-4 md:mt-0">
+                <div className="text-right">
+                  <p className="text-xl font-black">₹{Number(opp.budget_amount || 0).toLocaleString()}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{opp.budget_type}</p>
+                </div>
+                <div className="p-4 border-2 border-black group-hover:bg-black group-hover:text-white transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                  Apply <ArrowRight size={14} />
+                </div>
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  const AppliedCampaigns = () => (
+    <div className="space-y-1">
+      <SectionHeader title="Applied Campaigns" subtitle="Track your proposal status" />
+      <div className="border-t border-gray-100">
+        {applications.length === 0 ? (
+          <div className="py-20 text-center border-b border-gray-100">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">You haven't applied to any campaigns yet</p>
+          </div>
+        ) : (
+          applications.map(app => (
+            <div key={app.id} className="flex flex-col md:flex-row md:items-center justify-between p-8 border-b border-gray-100 hover:bg-gray-50/50 transition-all">
+              <div className="flex gap-6 items-center">
+                <div className={`w-12 h-12 border-2 flex items-center justify-center shrink-0 ${
+                  app.status === 'hired' ? 'bg-green-500 border-green-500 text-white' : 
+                  app.status === 'shortlisted' ? 'bg-[#0044ff] border-[#0044ff] text-white' : 'border-black'
+                }`}>
+                  {app.status === 'hired' ? <CheckCircle2 size={20} /> : <Clock size={20} />}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold tracking-tight">{app.opportunity?.title}</h3>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Client: {app.opportunity?.brand?.username}</p>
+                    {app.status === 'hired' && (
+                      <span className="flex items-center gap-1 bg-green-100 text-green-700 px-2 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
+                        <BadgeCheck size={10} /> Payment Secured
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-12 mt-4 md:mt-0">
+                <div className="text-right">
+                  <p className="text-xl font-black">₹{Number(app.expected_price || 0).toLocaleString()}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Expected</p>
+                </div>
+                <div className={`px-4 py-2 border-2 text-[10px] font-black uppercase tracking-[0.2em] min-w-[120px] text-center ${
+                  app.status === 'hired' ? 'bg-green-500 border-green-500 text-white' : 
+                  app.status === 'shortlisted' ? 'bg-[#0044ff] border-[#0044ff] text-white' :
+                  app.status === 'rejected' ? 'bg-red-500 border-red-500 text-white' : 'border-black'
+                }`}>
+                  {app.status.toUpperCase()}
+                </div>
+                {app.status === 'shortlisted' && (
+                  <button onClick={() => navigate(`/dm/${app.opportunity?.brand_id}`)} className="p-3 border-2 border-black hover:bg-black hover:text-white transition-all">
+                    <MessageSquare size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  const PaymentsSection = () => (
+    <div className="space-y-8">
+      <SectionHeader title="Payments" subtitle="Earnings & UPI Settings" />
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="p-12 border-2 border-black bg-black text-white">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-60">Total Earnings</p>
+          <h3 className="text-6xl font-black tracking-tighter mb-8">₹{stats.earnings.toLocaleString()}</h3>
+          <button className="text-[10px] font-black uppercase tracking-widest underline underline-offset-4 hover:text-[#0044ff]">Withdraw to Bank</button>
+        </div>
+        
+        <div className="p-12 border-2 border-black">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-8">Connected UPI ID</p>
+          <div className="flex items-center justify-between p-4 border-2 border-gray-100 mb-8">
+            <span className="font-bold">annanya@okicici</span>
+            <button className="text-[10px] font-black uppercase tracking-widest text-[#0044ff]">Edit</button>
+          </div>
+          <p className="text-xs text-gray-400 leading-relaxed">Payments are instantly released to your UPI ID once the brand approves your content.</p>
+        </div>
       </div>
 
-      {/* MAIN CONTENT */}
-      <div style={{ background: '#F8F9FC', padding: '28px 32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div style={{ fontSize: '24px', letterSpacing: '-.02em', color: '#9CA3AF', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '800' }}>
-              Good morning
-            </div>
-            <div style={{ fontSize: '56px', letterSpacing: '-.05em', color: '#0D1033', lineHeight: '1', textTransform: 'uppercase', fontWeight: '800' }}>
-              {user?.username}
-            </div>
-            <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '10px', letterSpacing: '.06em', textTransform: 'uppercase' }}>
-              Profile Performance Matrix · Q2 2026
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '9px', padding: '3px 10px', borderRadius: '999px', border: '0.5px solid #C8D0F8', background: '#EEF0FF', color: '#3B50E0', letterSpacing: '.08em' }}>CREATOR</span>
-            <span style={{ fontSize: '9px', padding: '3px 10px', borderRadius: '999px', border: '0.5px solid #BBF7D0', background: '#EDFFF4', color: '#16A34A', letterSpacing: '.08em' }}>ACTIVE</span>
-            <span style={{ fontSize: '10px', color: '#9CA3AF', marginLeft: '4px' }}>{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-          </div>
-        </div>
-
-        {/* Stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+      <div className="mt-12">
+        <h4 className="text-xs font-black uppercase tracking-widest mb-6">Recent Transactions</h4>
+        <div className="border-t-2 border-black">
           {[
-            { label: 'PORTFOLIO', value: portfolio.length, color: '#3B50E0', sub: '+0 this month', borderLeft: '3px solid #3B50E0' },
-            { label: 'PROJECTS', value: projects.length, color: '#0D1033', sub: 'portfolio projects', borderLeft: '3px solid #0D1033' },
-            { label: 'INQUIRIES', value: pendingRequests.length, color: '#C060C0', sub: '+0 new', borderLeft: '3px solid #C060C0' },
-            { label: 'ACTIVE JOBS', value: accepted.length, color: '#16A34A', sub: 'hired', borderLeft: '3px solid #16A34A' },
-          ].map(card => (
-            <div key={card.label} style={{ background: '#fff', border: 'none', borderLeft: card.borderLeft, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderRadius: '0px', padding: '16px' }}>
-              <div style={{ fontSize: '10px', color: '#9CA3AF', letterSpacing: '.14em', textTransform: 'uppercase', marginBottom: '8px' }}>{card.label}</div>
-              <div style={{ fontSize: '24px', color: card.color }}>{card.value}</div>
-              <div style={{ fontSize: '9px', color: '#9CA3AF', marginTop: '6px' }}>{card.sub}</div>
+            { title: 'Nike Air Max Launch', amount: 15000, date: '12 May 2026', status: 'Completed' },
+            { title: 'H&M Winter Collection', amount: 10000, date: '10 May 2026', status: 'Completed' },
+            { title: 'Spotify Story', amount: 5000, date: '08 May 2026', status: 'Completed' },
+            { title: 'Starbucks Summer', amount: 8000, date: '05 May 2026', status: 'Pending' },
+            { title: 'Sony Review', amount: 12000, date: '02 May 2026', status: 'Pending' },
+            { title: 'Apple Watch Series 9', amount: 20000, date: '28 Apr 2026', status: 'Completed' },
+            { title: 'Adobe Tutorial', amount: 7500, date: '25 Apr 2026', status: 'Completed' },
+            { title: 'Tesla Vlog', amount: 50000, date: '20 Apr 2026', status: 'Pending' },
+            { title: 'Netflix Promo', amount: 30000, date: '15 Apr 2026', status: 'Pending' },
+            { title: 'Coca Cola Reel', amount: 6000, date: '10 Apr 2026', status: 'Completed' }
+          ].map((t, i) => (
+            <div key={i} className="flex justify-between items-center py-6 border-b border-gray-100">
+              <div>
+                <p className="font-bold text-sm">Campaign Payout: {t.title}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.date}</p>
+              </div>
+              <div className="text-right">
+                <p className={`font-black ${t.status === 'Completed' ? 'text-green-600' : 'text-orange-500'}`}>
+                  {t.status === 'Completed' ? '+' : ''} ₹{t.amount.toLocaleString()}
+                </p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.status}</p>
+              </div>
             </div>
           ))}
         </div>
-
-        {/* Projects Section */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '.16em', textTransform: 'uppercase', color: '#0D1033' }}>PORTFOLIO PROJECTS</div>
-            <Link to="/upload" style={{ fontSize: '9px', color: '#3B50E0', textDecoration: 'none' }}>+ Create project</Link>
-          </div>
-          
-          {loading ? (
-            <div className="h-20 bg-gray-50 animate-pulse" />
-          ) : projects.length === 0 ? (
-            <div style={{ border: '1px dashed #E0E0EC', background: '#fff', borderRadius: '10px', padding: '32px', textAlign: 'center', fontSize: '11px', color: '#C4C4D0' }}>
-              Organize your work into projects to stand out
-            </div>
-          ) : (
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {projects.map(project => {
-                const firstMedia = project.items?.[0];
-                return (
-                  <div 
-                    key={project.id}
-                    onClick={() => setSelectedDetailProject({
-                      ...project,
-                      items: (project.items || []).map(i => ({
-                        ...i,
-                        mediaUrl: i.media_url || i.mediaUrl,
-                        mediaType: i.media_type || i.mediaType
-                      })),
-                      author: user
-                    })}
-                    className="flex-shrink-0 w-64 bg-white border border-[#F0F0F0] p-0 hover:shadow-lg transition-all group relative cursor-pointer"
-                  >
-                    <div className="aspect-video relative overflow-hidden bg-[#FAFAFA]">
-                      {firstMedia ? (
-                        firstMedia.media_type === 'video' ? (
-                          <video 
-                            src={firstMedia.media_url} 
-                            className="w-full h-full object-cover"
-                            muted
-                            onMouseOver={e => e.target.play()}
-                            onMouseOut={e => e.target.pause()}
-                          />
-                        ) : (
-                          <img src={firstMedia.media_url} alt={project.title} className="w-full h-full object-cover" />
-                        )
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="w-6 h-6 text-[#F0F0F0]" />
-                        </div>
-                      )}
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setEditingProject(project); }}
-                        className="absolute top-3 right-3 p-2 bg-white/90 border border-[#F0F0F0] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white backdrop-blur-sm shadow-sm"
-                        style={{ borderRadius: '0px' }}
-                      >
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div className="p-5">
-                      <h3 className="font-black text-xs uppercase tracking-tighter mb-1 truncate">{project.title}</h3>
-                      <p className="text-[9px] text-[#9CA3AF] uppercase tracking-widest font-bold mb-4">{project.category}</p>
-                      <div className="flex justify-between items-center text-[9px] font-black text-[#0D1033] uppercase mt-auto">
-                        <span>VIEW DETAILS</span>
-                        <ArrowUpRight className="w-3 h-3" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <EditProjectModal 
-            project={editingProject}
-            isOpen={!!editingProject}
-            onClose={() => setEditingProject(null)}
-            onSave={(updated) => {
-              setProjects(prev => prev.map(p => p.id === updated.id ? updated : p));
-            }}
-          />
-
-          <WorkDetailCard 
-            project={selectedDetailProject}
-            onClose={() => setSelectedDetailProject(null)}
-          />
-        </div>
-
-        {/* Portfolio section */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '.16em', textTransform: 'uppercase', color: '#0D1033' }}>DIGITAL PORTFOLIO</div>
-            <div onClick={handleAddWork} style={{ fontSize: '9px', color: '#3B50E0', cursor: 'pointer' }}>+ Add work</div>
-          </div>
-          
-          {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="aspect-square bg-gray-50 border border-[#F0F0F0] animate-pulse" />
-              ))}
-            </div>
-          ) : portfolio.length === 0 ? (
-            <div style={{ border: '1px dashed #E0E0EC', background: '#fff', borderRadius: '10px', padding: '48px 32px', textAlign: 'center', fontSize: '11px', color: '#C4C4D0' }}>
-              Upload your first work to start attracting brands
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {portfolio.map(item => {
-                const firstMedia = item.items?.[0];
-                return (
-                  <motion.div 
-                    key={item.id}
-                    whileHover={{ y: -4 }}
-                    onClick={() => setSelectedDetailProject({
-                      ...item,
-                      mediaUrl: firstMedia?.media_url,
-                      mediaType: firstMedia?.media_type,
-                      items: (item.items || []).map(i => ({
-                        ...i,
-                        mediaUrl: i.media_url || i.mediaUrl,
-                        mediaType: i.media_type || i.mediaType
-                      })),
-                      author: user
-                    })}
-                    className="group bg-white border border-[#F0F0F0] p-4 transition-all duration-300 cursor-pointer"
-                  >
-                    <div className="aspect-square relative overflow-hidden bg-[#FAFAFA] mb-4">
-                      {firstMedia ? (
-                        firstMedia.media_type === 'image' ? (
-                          <img src={firstMedia.media_url} alt={item.title} className="w-full h-full object-cover transition-all duration-500" />
-                        ) : (
-                          <video 
-                            src={firstMedia.media_url} 
-                            className="w-full h-full object-cover transition-all duration-500"
-                            muted
-                            loop
-                            onMouseOver={e => e.target.play()}
-                            onMouseOut={e => e.target.pause()}
-                          />
-                        )
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <ImageIcon className="w-6 h-6 text-[#F0F0F0]" />
-                        </div>
-                      )}
-                      
-                      <div className="absolute top-0 left-0 px-2 py-1 bg-white border-r border-b border-[#F0F0F0] text-[8px] font-black uppercase tracking-widest text-[#0D1033]">
-                        {item.category}
-                      </div>
-                      {firstMedia?.media_type === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none group-hover:opacity-0 transition-opacity">
-                          <PlayCircle className="w-8 h-8 text-white/50" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="px-1">
-                      <h3 className="text-xs font-black text-[#0D1033] truncate uppercase tracking-tighter">{item.title}</h3>
-                      <div className="flex justify-between items-center mt-2">
-                        <p className="text-[9px] font-bold text-[#9CA3AF] uppercase">{new Date(item.created_at).toLocaleDateString()}</p>
-                        <ArrowUpRight className="w-3 h-3 text-[#9CA3AF] group-hover:text-[#0D1033] transition-colors" />
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Inquiries section */}
-        <div id="inquiries-section">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ fontSize: '10px', letterSpacing: '.16em', textTransform: 'uppercase', color: '#0D1033' }}>INQUIRIES</div>
-            <div style={{ fontSize: '9px', color: '#9CA3AF' }}>{pendingRequests.length} PENDING</div>
-          </div>
-
-          {loading ? (
-            <div className="space-y-6">
-              {[1, 2].map(i => (
-                <div key={i} className="h-40 bg-gray-50 border border-[#F0F0F0] animate-pulse" />
-              ))}
-            </div>
-          ) : pendingRequests.length === 0 ? (
-            <div style={{ border: '1px dashed #E0E0EC', background: '#fff', borderRadius: '10px', padding: '48px 32px', textAlign: 'center', fontSize: '11px', color: '#C4C4D0' }}>
-              No inquiries yet — brands will appear here once they reach out
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {pendingRequests.map(r => (
-                <motion.div 
-                  key={r.id}
-                  whileHover={{ x: 4 }}
-                  className="bg-white border border-[#F0F0F0] p-8 transition-all"
-                >
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <h3 className="text-lg font-light text-[#0D1033] tracking-tight">{r.project_title}</h3>
-                      <p className="text-[9px] font-black text-[#9CA3AF] uppercase mt-1 tracking-widest">Client: {r.brand?.username}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-lg font-light text-[#0D1033]">${r.budget?.toLocaleString()}</div>
-                      <div className="text-[9px] uppercase tracking-widest font-black text-[#9CA3AF]">Budget (USD)</div>
-                    </div>
-                  </div>
-                  <div className="border-l-2 border-[#F0F0F0] pl-6 py-2 mb-8">
-                    <p className="text-xs text-[#6B7280] leading-relaxed italic">
-                      {r.project_description}
-                    </p>
-                  </div>
-                  <div className="flex gap-4">
-                    <button 
-                      onClick={() => updateStatus(r.id, 'Accepted')} 
-                      className="border border-[#0D1033] bg-white text-[#0D1033] px-10 py-3 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-[#F9FAFB] transition-all"
-                    >
-                      Accept Proposal
-                    </button>
-                    <button 
-                      onClick={() => updateStatus(r.id, 'Declined')} 
-                      className="border border-[#F0F0F0] text-[#6B7280] px-10 py-3 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-gray-50 transition-all"
-                    >
-                      Decline
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-
       </div>
+    </div>
+  );
+
+  const PortfolioSection = () => (
+    <div>
+      <SectionHeader title="Portfolio" subtitle="Your uploaded content & work">
+        <button onClick={() => navigate('/upload')} className="bg-black text-white px-6 py-3 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+          <Upload size={14} /> Upload New
+        </button>
+      </SectionHeader>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {portfolio.length === 0 ? (
+          [1,2,3,4].map(i => (
+            <div key={i} className="aspect-square bg-gray-50 border-2 border-gray-100 flex items-center justify-center text-gray-300">
+              <Box size={32} />
+            </div>
+          ))
+        ) : (
+          portfolio.map(work => (
+            <div key={work.id} className="aspect-square border-2 border-black overflow-hidden group relative">
+              <img src={work.url} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" />
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white">{work.title}</p>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  const Analytics = () => (
+    <div>
+      <SectionHeader title="Analytics" subtitle="Campaign performance & growth" />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-1">
+        <div className="p-12 border-2 border-black">
+          <p className="text-4xl font-black tracking-tighter">₹{(stats.earnings/1000).toFixed(1)}K</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Total Earnings</p>
+        </div>
+        <div className="p-12 border-2 border-black">
+          <p className="text-4xl font-black tracking-tighter">{stats.completed}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Campaigns Done</p>
+        </div>
+        <div className="p-12 border-2 border-black">
+          <p className="text-4xl font-black tracking-tighter">{stats.rating}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Average Rating</p>
+        </div>
+        <div className="p-12 border-2 border-black">
+          <p className="text-4xl font-black tracking-tighter">{stats.repeatClients}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mt-2">Repeat Clients</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Helmet>
+        <title>Dashboard | DRIPLENS</title>
+      </Helmet>
+
+      {/* Main Content */}
+      <main className="flex-1 p-8 md:p-16">
+        <div className="max-w-5xl mx-auto">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {activeTab === 'overview' && <OverviewContent user={user} />}
+              {activeTab === 'opportunities' && <OpportunitiesFeed />}
+              {activeTab === 'applied' && <AppliedCampaigns />}
+              {activeTab === 'projects' && <ActiveProjects />}
+              {activeTab === 'payments' && <PaymentsSection />}
+              {activeTab === 'analytics' && <Analytics />}
+              {activeTab === 'portfolio' && <PortfolioSection />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   );
 }

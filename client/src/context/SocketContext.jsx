@@ -10,14 +10,29 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     if (user && token) {
-      const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+      const socketUrl = import.meta.env.PROD ? window.location.origin : (import.meta.env.VITE_API_URL || 'http://localhost:5001');
+      console.log('Connecting to socket at:', socketUrl);
+      
+      const newSocket = io(socketUrl, {
         query: { userId: user.id },
-        auth: { token }
+        auth: { token },
+        transports: ['websocket', 'polling'] // Ensure websocket is tried first
+      });
+
+      newSocket.on('connect', () => {
+        console.log('Socket connected:', newSocket.id);
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.log('Socket connection info (serverless fallback):', error.message);
       });
 
       setSocket(newSocket);
 
-      return () => newSocket.close();
+      return () => {
+        console.log('Closing socket connection');
+        newSocket.close();
+      };
     } else {
       if (socket) {
         socket.close();
