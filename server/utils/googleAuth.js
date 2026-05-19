@@ -18,6 +18,6 @@ export async function verifyGoogleToken(idToken) {
     return ticket.getPayload();
   } catch (err) {
     console.error('Google Token Verification Failed:', err.message);
-    throw new Error('Invalid Google token: ' + err.message);
+    throw new Error('Invalid Google token: ' + err.message, { cause: err });
   }
 }
