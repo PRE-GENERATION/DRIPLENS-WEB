@@ -8,7 +8,13 @@
     "server"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=client",
-    "build": "npm run build --workspace=client"
+    "dev:client": "npm run dev --workspace=client",
+    "dev:server": "npm run dev --workspace=server",
+    "dev": "concurrently -n \"client,server\" -c \"cyan,magenta\" \"npm run dev:client\" \"npm run dev:server\"",
+    "build:client": "npm run build --workspace=client",
+    "build": "npm run build:client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

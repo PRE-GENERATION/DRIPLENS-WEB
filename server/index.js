@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import './config/env.js';                     // Validate env vars before anything else
 
 import express    from 'express';
@@ -10,9 +9,25 @@ import { supabase }     from './utils/supabase.js';
 import logger           from './utils/logger.js';
 import { createServer } from 'http';
 import { initSocket }  from './utils/socket.js';
-import { env }          from './config/env.js';
+import { env, envError } from './config/env.js';
 
 const app = express();
+
+// Intercept all requests if environment variables are misconfigured
+app.use((req, res, next) => {
+  if (envError) {
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'MISCONFIGURED_ENVIRONMENT',
+        message: 'The server environment variables are missing or misconfigured on Vercel. Please configure them in your Vercel Project Settings.',
+        details: envError
+      }
+    });
+  }
+  next();
+});
+
 const httpServer = createServer(app);
 
 // Initialize Socket.io
@@ -60,7 +75,7 @@ app.use(errorHandler);
 
 // ── Boot ──────────────────────────────────────────────────────
 const PORT = env.PORT;
-if (!process.env.VERCEL) {
+if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
   httpServer.listen(PORT, () => {
     logger.info(`Server started`, { port: PORT, env: env.NODE_ENV });
   });
