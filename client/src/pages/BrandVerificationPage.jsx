@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, Shield, FileText, Globe, Smartphone, ArrowRight, Upload } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper Components (Outside main component to prevent focus loss)
@@ -53,6 +54,57 @@ export default function BrandVerificationPage() {
     companyProof: null,
     socialLink: ''
   });
+
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  const sendOtp = async () => {
+    if (!user?.email) return;
+    setSendingOtp(true);
+    setOtpError('');
+    try {
+      const { error: otpSendError } = await supabase.auth.signInWithOtp({
+        email: user.email,
+        options: {
+          shouldCreateUser: false
+        }
+      });
+      if (otpSendError) throw otpSendError;
+      setOtpSent(true);
+    } catch (err) {
+      console.error('Error sending OTP:', err);
+      setOtpError(err.message || 'Failed to send OTP email.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.email && !otpSent && !sendingOtp && step === 1) {
+      sendOtp();
+    }
+  }, [user, otpSent, sendingOtp, step]);
+
+  const handleVerifyStep1 = async () => {
+    setVerifyingOtp(true);
+    setOtpError('');
+    try {
+      const { error: otpVerifyError } = await supabase.auth.verifyOtp({
+        email: user.email,
+        token: formData.otp,
+        type: 'email'
+      });
+      if (otpVerifyError) throw otpVerifyError;
+      nextStep();
+    } catch (err) {
+      console.error('Error verifying OTP:', err);
+      setOtpError(err.message || 'Invalid or expired OTP code.');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
 
   const nextStep = () => setStep(p => p + 1);
   const prevStep = () => setStep(p => p - 1);
@@ -132,23 +184,43 @@ export default function BrandVerificationPage() {
               >
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">OTP Verification</label>
-                  <p className="text-sm text-gray-600 mb-4">Enter the 6-digit code sent to your registered email/phone.</p>
+                  <p className="text-sm text-gray-600 mb-4">
+                    {sendingOtp ? 'Sending verification code to your email...' : `We've sent a 6-digit verification code to your email: ${user?.email || ''}`}
+                  </p>
                   <input 
                     type="text" 
                     maxLength={6}
                     placeholder="000000"
                     value={formData.otp}
-                    onChange={(e) => setFormData(p => ({ ...p, otp: e.target.value }))}
+                    onChange={(e) => setFormData(p => ({ ...p, otp: e.target.value.replace(/\D/g, '') }))}
                     className="w-full p-5 border-2 border-black font-black text-2xl tracking-[1em] text-center outline-none focus:border-[#0044ff]"
+                    disabled={sendingOtp || verifyingOtp}
                   />
+                  {otpError && (
+                    <div className="text-red-500 text-xs font-bold uppercase tracking-widest mt-2">
+                      {otpError}
+                    </div>
+                  )}
                 </div>
-                <button 
-                  onClick={nextStep}
-                  disabled={formData.otp.length < 6}
-                  className="w-full p-5 bg-black text-white font-black uppercase tracking-widest border-2 border-black hover:bg-[#0044ff] hover:border-[#0044ff] transition-all disabled:opacity-50"
-                >
-                  Verify & Continue
-                </button>
+                
+                <div className="flex flex-col gap-3">
+                  <button 
+                    onClick={handleVerifyStep1}
+                    disabled={formData.otp.length < 6 || sendingOtp || verifyingOtp}
+                    className="w-full p-5 bg-black text-white font-black uppercase tracking-widest border-2 border-black hover:bg-[#0044ff] hover:border-[#0044ff] transition-all disabled:opacity-50"
+                  >
+                    {verifyingOtp ? 'Verifying...' : 'Verify & Continue'}
+                  </button>
+                  
+                  <button 
+                    type="button"
+                    onClick={sendOtp}
+                    disabled={sendingOtp || verifyingOtp}
+                    className="w-full p-3 bg-white text-black font-bold uppercase tracking-widest text-xs border-2 border-black hover:bg-gray-50 transition-all disabled:opacity-50"
+                  >
+                    {sendingOtp ? 'Sending...' : 'Resend Code'}
+                  </button>
+                </div>
               </motion.div>
             )}
 
