@@ -26,6 +26,7 @@ const envSchema = z.object({
   SB_PUBLISHABLE_KEY: z.string().optional(),
   SB_SECRET_KEY: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -65,13 +65,7 @@ export default function BrandVerificationPage() {
     setSendingOtp(true);
     setOtpError('');
     try {
-      const { error: otpSendError } = await supabase.auth.signInWithOtp({
-        email: user.email,
-        options: {
-          shouldCreateUser: false
-        }
-      });
-      if (otpSendError) throw otpSendError;
+      await api.post('/auth/send-verification-otp');
       setOtpSent(true);
     } catch (err) {
       console.error('Error sending OTP:', err);
@@ -91,12 +85,7 @@ export default function BrandVerificationPage() {
     setVerifyingOtp(true);
     setOtpError('');
     try {
-      const { error: otpVerifyError } = await supabase.auth.verifyOtp({
-        email: user.email,
-        token: formData.otp,
-        type: 'email'
-      });
-      if (otpVerifyError) throw otpVerifyError;
+      await api.post('/auth/verify-verification-otp', { code: formData.otp });
       nextStep();
     } catch (err) {
       console.error('Error verifying OTP:', err);
