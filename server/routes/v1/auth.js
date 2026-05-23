@@ -24,6 +24,14 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res, next)
   } catch (err) { next(err); }
 });
 
+router.post('/oauth-callback', authLimiter, async (req, res, next) => {
+  try {
+    const { token, role } = req.body;
+    const result = await authService.oauthCallback(token, role);
+    res.status(200).json({ success: true, data: result });
+  } catch (err) { next(err); }
+});
+
 router.post('/refresh', authLimiter, async (req, res, next) => {
   try {
     const { refresh_token } = req.body;

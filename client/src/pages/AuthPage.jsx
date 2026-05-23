@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { ArrowRight, User, Briefcase, Instagram, Globe, Phone, Mail, Lock, Building } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import './agency.css';
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -13,7 +14,7 @@ import './agency.css';
 const RoleSelector = ({ onRoleSelect, mode, setMode }) => (
   <div className="flex flex-col w-full max-w-2xl gap-4 p-4">
     <h2 className="text-3xl font-black mb-8 tracking-tight">I AM A...</h2>
-    
+
     {/* Brand Option */}
     <motion.button
       whileHover={{ x: 10 }}
@@ -51,7 +52,7 @@ const RoleSelector = ({ onRoleSelect, mode, setMode }) => (
     </motion.button>
 
     <div className="mt-8 text-center">
-      <button 
+      <button
         onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
         className="text-sm font-bold underline underline-offset-4 hover:text-[#0044ff]"
       >
@@ -61,13 +62,13 @@ const RoleSelector = ({ onRoleSelect, mode, setMode }) => (
   </div>
 );
 
-const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, errors, apiError, loading, setSelectedRole }) => (
-  <motion.div 
+const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, errors, apiError, loading, setSelectedRole, onGoogleSignIn }) => (
+  <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     className="w-full max-w-md p-4"
   >
-    <button 
+    <button
       onClick={() => {
         setSelectedRole(null);
         const newParams = new URLSearchParams(window.location.search);
@@ -95,7 +96,7 @@ const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, er
             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Brand Name</label>
             <div className="relative">
               <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
+              <input
                 name="brandName"
                 value={formData.brandName}
                 onChange={handleChange}
@@ -111,7 +112,7 @@ const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, er
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Instagram</label>
               <div className="relative">
                 <Instagram className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input 
+                <input
                   name="instagramHandle"
                   value={formData.instagramHandle}
                   onChange={handleChange}
@@ -124,7 +125,7 @@ const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, er
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Website</label>
               <div className="relative">
                 <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input 
+                <input
                   name="website"
                   value={formData.website}
                   onChange={handleChange}
@@ -139,7 +140,7 @@ const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, er
             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Contact Person</label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
+              <input
                 name="contactName"
                 value={formData.contactName}
                 onChange={handleChange}
@@ -153,7 +154,7 @@ const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, er
             <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Phone Number</label>
             <div className="relative">
               <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-              <input 
+              <input
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
@@ -169,7 +170,7 @@ const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, er
         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Email Address</label>
         <div className="relative">
           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-          <input 
+          <input
             name="email"
             type="email"
             value={formData.email}
@@ -185,7 +186,7 @@ const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, er
         <label className="text-[10px] font-black uppercase tracking-widest text-gray-400">Password</label>
         <div className="relative">
           <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-          <input 
+          <input
             name="password"
             type="password"
             value={formData.password}
@@ -197,8 +198,8 @@ const AuthForm = ({ mode, selectedRole, formData, handleChange, handleSubmit, er
         {errors.password && <span className="text-[10px] text-red-500 font-bold">{errors.password}</span>}
       </div>
 
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         disabled={loading}
         className="w-full p-5 bg-black text-white font-black uppercase tracking-widest border-2 border-black hover:bg-[#0044ff] hover:border-[#0044ff] transition-all disabled:opacity-50"
       >
@@ -231,8 +232,8 @@ export default function AuthPage() {
   const initialMode = searchParams.get('mode') === 'register' ? 'register' : 'login';
   const initialRole = searchParams.get('role'); // 'creator' or 'brand'
   const [mode, setMode] = useState(initialMode);
-  const [selectedRole, setSelectedRole] = useState(initialRole); 
-  
+  const [selectedRole, setSelectedRole] = useState(initialRole);
+
   const [formData, setFormData] = useState({
     // Shared
     email: '',
@@ -272,7 +273,7 @@ export default function AuthPage() {
     const e = {};
     if (!formData.email.trim()) e.email = 'Required';
     if (formData.password.length < 8) e.password = 'Min 8 characters';
-    
+
     if (mode === 'register') {
       if (selectedRole === 'brand') {
         // Brand fields are now optional as requested
@@ -294,18 +295,18 @@ export default function AuthPage() {
       if (mode === 'register') {
         let userData;
         if (selectedRole === 'brand') {
-          const baseName = formData.brandName 
-            ? formData.brandName.toLowerCase().replace(/[^a-z0-9_.]/g, '_') 
+          const baseName = formData.brandName
+            ? formData.brandName.toLowerCase().replace(/[^a-z0-9_.]/g, '_')
             : formData.email.split('@')[0].replace(/[^a-z0-9_.]/g, '_');
           const randomSuffix = Math.random().toString(36).substring(2, 6);
           const derivedUsername = `${baseName}_${randomSuffix}`.slice(0, 30);
-          
+
           userData = await register(derivedUsername, formData.email, formData.password, 'brand', {
-            brand_name:       formData.brandName,
+            brand_name: formData.brandName,
             instagram_handle: formData.instagramHandle,
-            website:          formData.website,
-            contact_person:   formData.contactName,
-            phone_number:     formData.phoneNumber,
+            website: formData.website,
+            contact_person: formData.contactName,
+            phone_number: formData.phoneNumber,
           });
         } else {
           const baseName = formData.email.split('@')[0].replace(/[^a-z0-9_.]/g, '_');
@@ -322,7 +323,7 @@ export default function AuthPage() {
         }
       } else {
         const userData = await login(formData.email, formData.password);
-        
+
         // Redirect after login
         if (userData.role === 'creator' && !userData.onboarding_complete) {
           navigate('/onboarding/step-1', { replace: true });
@@ -353,11 +354,11 @@ export default function AuthPage() {
 
       {/* Hero Section */}
       <div className="md:w-[40%] bg-black text-white p-8 md:p-16 flex flex-col justify-between relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 pointer-events-none" 
-             style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-        
+        <div className="absolute inset-0 opacity-10 pointer-events-none"
+          style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+
         <Link to="/" className="text-2xl font-black tracking-tighter relative z-10 text-white">DRIPLENS</Link>
-        
+
         <div className="relative z-10">
           <motion.div
             initial={{ x: -20, opacity: 0 }}
@@ -399,7 +400,7 @@ export default function AuthPage() {
               exit={{ opacity: 0, x: -20 }}
               className="w-full flex justify-center"
             >
-              <AuthForm 
+              <AuthForm
                 mode={mode}
                 selectedRole={selectedRole}
                 formData={formData}
@@ -409,6 +410,7 @@ export default function AuthPage() {
                 apiError={apiError}
                 loading={loading}
                 setSelectedRole={setSelectedRole}
+                onGoogleSignIn={handleGoogleSignIn}
               />
             </motion.div>
           )}

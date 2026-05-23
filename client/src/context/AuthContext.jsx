@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -8,22 +9,44 @@ export function AuthProvider({ children }) {
   const [token, setToken]     = useState(null);
   const [loading, setLoading] = useState(true); // true on first load
 
-  // On mount — rehydrate from localStorage
+  // On mount — rehydrate from localStorage and handle Google OAuth callback
   useEffect(() => {
-    try {
-      const storedToken = localStorage.getItem('token');
-      const storedUser  = localStorage.getItem('user');
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+    const initAuth = async () => {
+      try {
+        const storedToken = localStorage.getItem('token');
+        const storedUser  = localStorage.getItem('user');
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+          setLoading(false);
+          return;
+        }
+
+        // Try to fetch Supabase session if redirected back from Google OAuth
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.access_token) {
+          const oauthRole = localStorage.getItem('oauth_role') || 'creator';
+          const res = await api.post('/auth/oauth-callback', {
+            token: session.access_token,
+            role: oauthRole
+          });
+          const { access_token, user: userData } = res.data.data;
+          
+          localStorage.setItem('token', access_token);
+          localStorage.setItem('user', JSON.stringify(userData));
+          setToken(access_token);
+          setUser(userData);
+        }
+      } catch (err) {
+        console.error('Auth initialization / OAuth callback failed:', err);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      // Corrupt storage — clear it
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    initAuth();
   }, []);
 
   const login = useCallback(async (email, password) => {

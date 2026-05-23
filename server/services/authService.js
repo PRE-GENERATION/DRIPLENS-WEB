@@ -267,3 +267,69 @@ export const verifyVerificationOtp = async (email, code, userId) => {
 
   return { success: true };
 };
+
+export const oauthCallback = async (token, role) => {
+  if (isLocalAuth) {
+    return {
+      access_token: token,
+      user: {
+        id: 'oauth-user-id-' + Math.floor(Math.random() * 1000),
+        username: 'oauth_user_' + Math.floor(Math.random() * 1000),
+        email: 'oauth_user@gmail.com',
+        role: role || 'creator',
+        onboarding_complete: false,
+        is_verified: false
+      }
+    };
+  }
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) {
+    throw unauthorized('Invalid or expired OAuth token');
+  }
+
+  let { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  const finalRole = profile?.role || role || 'creator';
+
+  if (!profile) {
+    const emailPrefix = user.email.split('@')[0].replace(/[^a-z0-9_.]/g, '_');
+    const randomSuffix = Math.random().toString(36).substring(2, 6);
+    const derivedUsername = `${emailPrefix}_${randomSuffix}`.slice(0, 30);
+
+    const { error: insertError } = await supabase.from('profiles').insert({
+      id: user.id,
+      username: derivedUsername,
+      role: finalRole,
+      onboarding_complete: false,
+      is_verified: finalRole === 'creator' ? true : false,
+    });
+
+    if (insertError) {
+      throw new AppError('Failed to create user profile: ' + insertError.message, 500, 'DB_ERROR');
+    }
+
+    const { data: newProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    profile = newProfile;
+  }
+
+  return {
+    access_token: token,
+    user: {
+      id: user.id,
+      email: user.email,
+      username: profile?.username || user.user_metadata?.username,
+      role: profile?.role || finalRole,
+      onboarding_complete: profile?.onboarding_complete || false,
+      is_verified: profile?.is_verified || false
+    }
+  };
+};
