@@ -8,7 +8,7 @@ const DashboardNav = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  if (!user) return null;
+  if (!user || window.location.pathname === '/dashboard/brand') return null;
 
   const setActiveTab = (tab) => {
     // If we are on a dashboard page, just update the search params
