@@ -690,12 +690,12 @@ export default function BrandDashboard() {
     setSearchParams({ tab });
   };
 
-  // Temporarily commented out verification check so you can view/test dashboard immediately
-  // useEffect(() => {
-  //   if (user && !user.is_verified) {
-  //     navigate('/verify/brand', { replace: true });
-  //   }
-  // }, [user, navigate]);
+  // Verification check - redirect to brand verification if not verified
+  useEffect(() => {
+    if (user && !user.is_verified) {
+      navigate('/verify/brand', { replace: true });
+    }
+  }, [user, navigate]);
 
   const tabs = [
     { id: 'overview', label: 'Dashboard' },

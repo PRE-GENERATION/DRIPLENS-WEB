@@ -56,6 +56,79 @@ export default function CreatorDashboard() {
   const activeTab = searchParams.get('tab') || 'overview';
   const [loading, setLoading] = useState(true);
   
+  // Messaging States
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [activeChatId, setActiveChatId] = useState('t1');
+  const [chatInput, setChatInput] = useState('');
+  
+  const [chatThreads, setChatThreads] = useState([
+    {
+      id: 't1',
+      brand: {
+        name: 'Nike India',
+        avatar_url: 'https://i.pravatar.cc/150?u=nike'
+      },
+      lastMessage: 'Hey Annanya, did you review the Reels script draft we shared?',
+      time: '10:45 AM',
+      unread: true
+    },
+    {
+      id: 't2',
+      brand: {
+        name: 'Spotify India',
+        avatar_url: 'https://i.pravatar.cc/150?u=spotify'
+      },
+      lastMessage: 'The escrow funds are locked and secured. You can proceed with filming!',
+      time: 'Yesterday',
+      unread: false
+    },
+    {
+      id: 't3',
+      brand: {
+        name: 'H&M India',
+        avatar_url: 'https://i.pravatar.cc/150?u=hm'
+      },
+      lastMessage: 'Let us coordinate the shipping address for winter apparel.',
+      time: 'May 20',
+      unread: true
+    }
+  ]);
+
+  const [chatMessages, setChatMessages] = useState({
+    t1: [
+      { sender: 'brand', text: 'Hi! Welcome to the Nike Air Max campaign group!', time: '10:30 AM' },
+      { sender: 'creator', text: 'Thank you! Excited to collaborate with Nike.', time: '10:40 AM' },
+      { sender: 'brand', text: 'Hey Annanya, did you review the Reels script draft we shared?', time: '10:45 AM' }
+    ],
+    t2: [
+      { sender: 'brand', text: 'We have approved the storyboard for the Spotify Story.', time: '2:15 PM' },
+      { sender: 'creator', text: 'Perfect. Let me know once the escrow transaction is initiated.', time: '2:18 PM' },
+      { sender: 'brand', text: 'The escrow funds are locked and secured. You can proceed with filming!', time: 'Yesterday' }
+    ],
+    t3: [
+      { sender: 'creator', text: 'Hi! When can we expect the sample lookbook items?', time: 'May 19' },
+      { sender: 'brand', text: 'They are dispatched today via Delhivery. Tracking link sent!', time: 'May 19' },
+      { sender: 'brand', text: 'Let us coordinate the shipping address for winter apparel.', time: 'May 20' }
+    ]
+  });
+
+  const unreadMessages = chatThreads.filter(t => t.unread).length;
+
+  const handleSendMessage = (threadId, text) => {
+    const newMsg = { sender: 'creator', text, time: 'Just now' };
+    setChatMessages(prev => ({
+      ...prev,
+      [threadId]: [...(prev[threadId] || []), newMsg]
+    }));
+    
+    setChatThreads(prev => prev.map(t => 
+      t.id === threadId 
+        ? { ...t, lastMessage: text, time: 'Just now', unread: false } 
+        : t
+    ));
+    setChatInput('');
+  };
+  
   // Data State
   const [opportunities, setOpportunities] = useState([
     { id: 'o1', title: 'Nike Air Max Launch', budget_amount: 15000, budget_type: 'Paid', niche: ['Sports', 'Fashion'], brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' } },
@@ -439,14 +512,201 @@ export default function CreatorDashboard() {
     </div>
   );
 
+  const tabs = [
+    { id: 'overview', label: 'Dashboard' },
+    { id: 'opportunities', label: 'Explore' },
+    { id: 'applied', label: 'Applied' },
+    { id: 'projects', label: 'Projects' },
+    { id: 'payments', label: 'Payments' },
+    { id: 'portfolio', label: 'Portfolio' }
+  ];
+
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50/50 pb-20">
       <Helmet>
-        <title>Dashboard | DRIPLENS</title>
+        <title>Creator Dashboard — Driplens</title>
       </Helmet>
 
+      {/* Floating Logo (Left Side) - Doubles as Message Chat Drawer Toggle */}
+      <div className="fixed left-6 top-6 z-50 flex items-center gap-2">
+        <button 
+          onClick={() => {
+            setIsChatOpen(!isChatOpen);
+            if (!activeChatId && chatThreads.length > 0) {
+              setActiveChatId(chatThreads[0].id);
+            }
+          }}
+          className="w-12 h-12 bg-black text-white border-2 border-black rounded-full flex items-center justify-center font-black text-sm tracking-tighter hover:scale-105 transition-all shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-[#0044ff] hover:border-[#0044ff] active:scale-95 group relative"
+        >
+          <span>DL</span>
+          {unreadMessages > 0 && (
+            <span className="absolute -top-1 -right-1 w-4.5 h-4.5 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center animate-bounce border-2 border-white">
+              {unreadMessages}
+            </span>
+          )}
+        </button>
+        <span className="hidden md:inline-block text-[9px] font-black uppercase tracking-widest text-black bg-white border-2 border-black px-3 py-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          Messages
+        </span>
+      </div>
+
+      {/* Floating Glassmorphic Top Navbar */}
+      <div className="fixed top-6 left-0 right-0 z-40 flex justify-center px-4">
+        <nav className="backdrop-blur-md bg-white/75 border-2 border-black rounded-full py-2 px-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex gap-1 items-center max-w-2xl w-full">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 text-center py-2.5 rounded-full text-[9px] sm:text-xs font-black uppercase tracking-wider transition-all ${
+                activeTab === tab.id
+                  ? 'bg-black text-white'
+                  : 'text-black hover:bg-black/5'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Top Right Action Buttons */}
+      <div className="fixed right-6 top-6 z-50 flex items-center gap-2">
+        <Link 
+          to="/settings" 
+          className="p-3 border-2 border-black hover:bg-black hover:text-white transition-all text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none bg-white"
+        >
+          <Settings size={16} />
+        </Link>
+        <button 
+          onClick={logout} 
+          className="px-5 py-3 border-2 border-black bg-black text-white hover:bg-red-500 hover:border-red-500 transition-all text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+        >
+          Logout
+        </button>
+      </div>
+
+      {/* Chat Drawer Side Panel */}
+      <AnimatePresence>
+        {isChatOpen && (
+          <>
+            {/* Backdrop filter overlay */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.3 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsChatOpen(false)}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs"
+            />
+            <motion.div
+              initial={{ x: '-100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '-100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 bottom-0 z-50 w-full sm:w-[380px] bg-white border-r-2 border-black shadow-2xl flex flex-col pt-24"
+            >
+              {/* Chat Panel Header */}
+              <div className="p-6 border-b-2 border-black flex justify-between items-center bg-gray-50">
+                <div>
+                  <h3 className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+                    <MessageSquare size={18} className="text-[#0044ff]" /> Messages
+                  </h3>
+                  <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-0.5">Chatting with campaign brands</p>
+                </div>
+                <button 
+                  onClick={() => setIsChatOpen(false)}
+                  className="p-2 border-2 border-black hover:bg-black hover:text-white transition-all text-[9px] font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none bg-white"
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* Chat Thread Selector / Thread List */}
+              <div className="flex-1 flex flex-col min-h-0">
+                {/* Conversations List */}
+                <div className="p-4 bg-gray-50/50 border-b border-gray-100 flex gap-2 overflow-x-auto py-3">
+                  {chatThreads.map(thread => (
+                    <button
+                      key={thread.id}
+                      onClick={() => {
+                        setActiveChatId(thread.id);
+                        // Mark as read
+                        setChatThreads(p => p.map(t => t.id === thread.id ? { ...t, unread: false } : t));
+                      }}
+                      className={`relative flex items-center gap-2 px-3 py-1.5 border-2 rounded-full text-[10px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                        activeChatId === thread.id 
+                          ? 'bg-black text-white border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
+                          : 'bg-white text-black border-gray-200 hover:border-black'
+                      }`}
+                    >
+                      <img src={thread.brand.avatar_url} className="w-5 h-5 rounded-full object-cover border border-black" alt="" />
+                      <span>{thread.brand.name.split(' ')[0]}</span>
+                      {thread.unread && (
+                        <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-ping" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Active Chat Conversation History */}
+                {activeChatId ? (
+                  <div className="flex-grow flex flex-col min-h-0 bg-gray-50/20">
+                    <div className="flex-grow overflow-y-auto p-6 space-y-4">
+                      {chatMessages[activeChatId]?.map((msg, index) => (
+                        <div 
+                          key={index}
+                          className={`flex flex-col max-w-[85%] ${msg.sender === 'creator' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+                        >
+                          <div 
+                            className={`p-4 border-2 border-black font-black text-xs leading-relaxed shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+                              msg.sender === 'creator' 
+                                ? 'bg-[#0044ff] text-white' 
+                                : 'bg-white text-black'
+                            }`}
+                          >
+                            {msg.text}
+                          </div>
+                          <span className="text-[8px] font-bold text-gray-400 mt-1.5 uppercase tracking-wider">{msg.time}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Chat Text Input Field */}
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        if (!chatInput.trim()) return;
+                        handleSendMessage(activeChatId, chatInput);
+                      }}
+                      className="p-4 border-t-2 border-black bg-white flex gap-2"
+                    >
+                      <input 
+                        type="text" 
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-grow p-4 border-2 border-black font-black text-xs outline-none focus:border-[#0044ff]"
+                      />
+                      <button 
+                        type="submit"
+                        className="px-5 bg-black text-white font-black uppercase text-xs tracking-wider border-2 border-black hover:bg-[#0044ff] hover:border-[#0044ff] transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-y-0.5 active:shadow-none"
+                      >
+                        Send
+                      </button>
+                    </form>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center p-6 text-center text-gray-400 text-xs font-bold uppercase tracking-wider">
+                    Select a conversation to start chatting
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       {/* Main Content */}
-      <main className="flex-1 p-8 md:p-16">
+      <main className="flex-grow pt-28 px-8 md:px-16 pb-12">
         <div className="max-w-5xl mx-auto">
           <AnimatePresence mode="wait">
             <motion.div

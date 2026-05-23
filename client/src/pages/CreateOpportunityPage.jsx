@@ -64,7 +64,28 @@ export default function CreateOpportunityPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post('/opportunities', formData);
+      const payload = {
+        ...formData,
+        min_followers: Number(formData.min_followers) || 0,
+        max_followers: formData.max_followers ? Number(formData.max_followers) : undefined,
+        num_reels: Number(formData.num_reels) || 0,
+        num_stories: Number(formData.num_stories) || 0,
+        num_photos: Number(formData.num_photos) || 0,
+        num_revisions: Number(formData.num_revisions) || 1,
+        budget_amount: formData.budget_amount ? Number(formData.budget_amount) : undefined,
+        // Convert YYYY-MM-DD to ISO DateTime string
+        application_deadline: formData.application_deadline 
+          ? new Date(formData.application_deadline).toISOString() 
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        content_deadline: formData.content_deadline 
+          ? new Date(formData.content_deadline).toISOString() 
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      };
+
+      // Clean undefined keys
+      Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
+      await api.post('/opportunities', payload);
       navigate('/dashboard/brand');
     } catch (err) {
       console.error('Failed to create opportunity:', err);
