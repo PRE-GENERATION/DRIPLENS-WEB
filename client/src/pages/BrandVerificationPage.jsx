@@ -268,6 +268,20 @@ export default function BrandVerificationPage() {
                       </div>
                     )}
                   </label>
+
+                  {formData.companyProof && (
+                    <div className="p-4 border-2 border-black bg-yellow-300 text-black flex flex-col gap-1 text-left mt-4">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-black animate-pulse" />
+                        <span className="text-[10px] font-black uppercase tracking-widest">
+                          Under Verification
+                        </span>
+                      </div>
+                      <p className="text-xs font-black uppercase tracking-tight leading-relaxed">
+                        We will verify whether this document is verified by the Government of India.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-4">
                   <button onClick={prevStep} className="flex-1 p-5 border-2 border-black font-black uppercase tracking-widest hover:bg-gray-50 transition-all">Back</button>
