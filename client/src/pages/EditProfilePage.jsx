@@ -77,6 +77,43 @@ export default function EditProfilePage() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [errors, setErrors] = useState({});
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleInstagramSync = async () => {
+    if (!formData.instagram) {
+      setErrors(p => ({ ...p, instagram: 'Please provide an Instagram handle first' }));
+      return;
+    }
+    setIsSyncing(true);
+    setMessage({ type: '', text: '' });
+    try {
+      const res = await api.post('/creators/instagram-sync', { username: formData.instagram });
+      const syncedData = res.data.data;
+      
+      setFormData(prev => ({
+        ...prev,
+        bio: syncedData.bio,
+        category: syncedData.category,
+        min_budget: syncedData.min_budget,
+        max_budget: syncedData.max_budget,
+        follower_count: syncedData.follower_count,
+        platforms: syncedData.platforms,
+        tags: syncedData.tags,
+        avatar_url: syncedData.avatar_url,
+        banner_url: syncedData.banner_url
+      }));
+
+      if (syncedData.avatar_url) setAvatarPreview(syncedData.avatar_url);
+      if (syncedData.banner_url) setBannerPreview(syncedData.banner_url);
+
+      setMessage({ type: 'success', text: 'Instagram metrics, reels, and analytics synchronized successfully!' });
+    } catch (err) {
+      console.error(err);
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to auto-sync Instagram metrics' });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Load current profile data
   useEffect(() => {
@@ -445,6 +482,14 @@ export default function EditProfilePage() {
                         />
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">@</span>
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleInstagramSync}
+                        disabled={isSyncing || !formData.instagram}
+                        className="mt-3 w-full py-3.5 bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white text-[10px] font-black uppercase tracking-widest border-2 border-black hover:scale-[1.01] transition-all disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                      >
+                        {isSyncing ? 'Syncing Media Kit...' : '⚡ Auto-Sync Instagram Media Kit'}
+                      </button>
                     </div>
 
                     {/* Twitter/X */}

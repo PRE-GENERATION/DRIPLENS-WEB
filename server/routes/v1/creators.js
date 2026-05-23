@@ -33,4 +33,48 @@ router.patch('/profile', requireAuth, validate(updateCreatorProfileSchema), asyn
 });
 
 
+router.post('/instagram-sync', requireAuth, async (req, res, next) => {
+  try {
+    const { username } = req.body;
+    if (!username) {
+      return res.status(400).json({ success: false, message: 'Instagram username is required' });
+    }
+    // Simulate API fetch delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Mock data based on username
+    const mockData = {
+      username: username.toLowerCase().replace('@', ''),
+      follower_count: Math.floor(Math.random() * (250000 - 15000) + 15000), // 15k to 250k
+      engagement_rate: (Math.random() * (7.5 - 3.5) + 3.5).toFixed(1), // 3.5% to 7.5%
+      bio: `Aesthetic lifestyle and fashion content creator based in Mumbai, India. Sharing daily reels, lookbooks, street styling, and transitions. For collaborations contact: ${username.replace('@', '')}@driplens.in`,
+      category: 'Photography',
+      platforms: ['Instagram', 'YouTube'],
+      tags: ['Fashion', 'Lifestyle', 'Aesthetic', 'Streetwear', 'Cinematography'],
+      min_budget: 15000,
+      max_budget: 80000,
+      avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      banner_url: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=800'
+    };
+
+    // Update profile in database using creatorService
+    const updatedProfile = await creatorService.updateProfile(req.user.id, {
+      bio: mockData.bio,
+      category: mockData.category,
+      instagram: mockData.username,
+      avatar_url: mockData.avatar_url,
+      banner_url: mockData.banner_url,
+      min_budget: mockData.min_budget,
+      max_budget: mockData.max_budget,
+      follower_count: mockData.follower_count,
+      platforms: mockData.platforms,
+      tags: mockData.tags
+    });
+
+    res.json({ success: true, data: mockData });
+  } catch (err) {
+    next(err);
+  }
+});
+
 export default router;
