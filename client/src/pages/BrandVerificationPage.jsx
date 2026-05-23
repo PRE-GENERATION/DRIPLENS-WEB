@@ -59,6 +59,7 @@ export default function BrandVerificationPage() {
   const [sendingOtp, setSendingOtp] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [hasSentOnMount, setHasSentOnMount] = useState(false);
 
   const sendOtp = async () => {
     if (!user?.email) return;
@@ -76,10 +77,11 @@ export default function BrandVerificationPage() {
   };
 
   useEffect(() => {
-    if (user?.email && !otpSent && !sendingOtp && step === 1) {
+    if (user?.email && !hasSentOnMount && step === 1) {
+      setHasSentOnMount(true);
       sendOtp();
     }
-  }, [user, otpSent, sendingOtp, step]);
+  }, [user?.email, step, hasSentOnMount]);
 
   const handleVerifyStep1 = async () => {
     setVerifyingOtp(true);

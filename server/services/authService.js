@@ -166,6 +166,8 @@ export const sendVerificationOtp = async (email) => {
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 mins expiry
 
+  console.log(`[Verification OTP] Generated code: ${code} for email: ${email}`);
+
   // 2. Upsert to verification_otps table
   const { error } = await supabase.from('verification_otps').upsert({
     email,
