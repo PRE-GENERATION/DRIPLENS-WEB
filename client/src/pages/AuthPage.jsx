@@ -252,6 +252,11 @@ export default function AuthPage() {
   const [apiError, setApiError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const handleGoogleSignIn = () => {
+    // TODO: Implement Google Sign-In
+    console.log("Google sign in not implemented yet");
+  };
+
   useEffect(() => {
     if (isLoggedIn && user) {
       if (user.role === 'creator' && !user.onboarding_complete) {

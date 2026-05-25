@@ -38,6 +38,8 @@ import AppliedCampaignsPage from './pages/AppliedCampaignsPage';
 import DashboardPage from './pages/DashboardPage';
 import EarningsPage from './pages/EarningsPage';
 import NotFoundPage from './pages/NotFoundPage';
+import CreateMemberPage from './pages/CreateMemberPage';
+import CreatePostPage from './pages/CreatePostPage';
 
 // Footer Pages - Product
 import FeaturesPage from './pages/FeaturesPage';
@@ -94,6 +96,8 @@ const AppContent = () => {
                       location.pathname.startsWith('/onboarding') ||
                       location.pathname.startsWith('/verify') ||
                       location.pathname === '/opportunities/new' ||
+                      location.pathname === '/members/new' ||
+                      location.pathname === '/posts/new' ||
                       isDM;
 
   const showNavbar = !isDashboard;
@@ -183,6 +187,12 @@ const AppContent = () => {
           } />
           <Route path="/opportunities/new" element={
             <ProtectedRoute requiredRole="brand"><CreateOpportunityPage /></ProtectedRoute>
+          } />
+          <Route path="/members/new" element={
+            <ProtectedRoute><CreateMemberPage /></ProtectedRoute>
+          } />
+          <Route path="/posts/new" element={
+            <ProtectedRoute><CreatePostPage /></ProtectedRoute>
           } />
 
           {/* 404 catch-all */}

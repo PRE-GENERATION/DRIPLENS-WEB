@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { 
   Search, 
   Calendar, 
@@ -16,6 +17,7 @@ import ReportsView from './dashboard/ReportsView';
 
 const OverviewContent = ({ user }) => {
   const [activeSubTab, setActiveSubTab] = useState('Overview');
+  const navigate = useNavigate();
   const tabs = ['Overview', 'Notifications', 'Analytics', 'Saved reports', 'Scheduled reports', 'User reports'];
   const timeRanges = ['12 months', '30 days', '7 days', '24 hours'];
   
@@ -41,7 +43,8 @@ const OverviewContent = ({ user }) => {
       author: 'Lana Steiner',
       date: '18 Jan 2026',
       category: 'Design',
-      image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800'
+      image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800',
+      link: 'https://www.postman.com/api-platform/api-testing/'
     },
     {
       title: 'Collaboration = better designer',
@@ -49,7 +52,8 @@ const OverviewContent = ({ user }) => {
       author: 'Natali Craig',
       date: '14 Jan 2026',
       category: 'Design',
-      image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800'
+      image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800',
+      link: 'https://miro.com/'
     }
   ];
 
@@ -205,7 +209,7 @@ const OverviewContent = ({ user }) => {
                   <button className="text-gray-400 hover:text-black"><MoreVertical size={20} /></button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-4 p-6 bg-white border border-gray-200 rounded-2xl hover:border-black transition-all cursor-pointer group shadow-sm">
+                  <div onClick={() => navigate('/members/new')} className="flex items-center gap-4 p-6 bg-white border border-gray-200 rounded-2xl hover:border-black transition-all cursor-pointer group shadow-sm">
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
                       <UserPlus size={24} />
                     </div>
@@ -214,7 +218,7 @@ const OverviewContent = ({ user }) => {
                       <p className="text-xs text-gray-500">Add yourself or import from CSV</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4 p-6 bg-white border border-gray-200 rounded-2xl hover:border-black transition-all cursor-pointer group shadow-sm">
+                  <div onClick={() => navigate('/posts/new')} className="flex items-center gap-4 p-6 bg-white border border-gray-200 rounded-2xl hover:border-black transition-all cursor-pointer group shadow-sm">
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
                       <PenLine size={24} />
                     </div>
@@ -234,7 +238,7 @@ const OverviewContent = ({ user }) => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {recentPosts.map((post) => (
-                    <div key={post.title} className="group cursor-pointer">
+                    <div key={post.title} className="group cursor-pointer" onClick={() => window.open(post.link, '_blank')}>
                       <div className="aspect-[16/9] overflow-hidden rounded-2xl mb-4 border border-gray-100">
                         <img src={post.image} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-500" alt="" />
                       </div>
@@ -245,9 +249,9 @@ const OverviewContent = ({ user }) => {
                       </div>
                       <h3 className="text-xl font-bold mb-2 group-hover:text-indigo-600 transition-colors">{post.title}</h3>
                       <p className="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">{post.excerpt}</p>
-                      <button className="flex items-center gap-2 text-indigo-600 text-xs font-bold hover:gap-3 transition-all">
+                      <a href={post.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-indigo-600 text-xs font-bold hover:gap-3 transition-all" onClick={(e) => e.stopPropagation()}>
                         Read post <ExternalLink size={14} />
-                      </button>
+                      </a>
                     </div>
                   ))}
                 </div>

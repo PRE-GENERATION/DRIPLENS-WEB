@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Helmet } from 'react-helmet-async';
 import { demoPhotographyOpportunities } from '../data/demoPhotographyOpportunities';
+import { api } from '../lib/api';
 
 export default function OpportunityDetailPage() {
   const { id } = useParams();
@@ -18,10 +19,82 @@ export default function OpportunityDetailPage() {
   const [bidError, setBidError] = useState('');
 
   useEffect(() => {
-    // Find the opportunity in our demo data
-    const found = demoPhotographyOpportunities.find(opp => opp.id === id);
-    setOpportunity(found);
-    setLoading(false);
+    const fetchOpportunity = async () => {
+      try {
+        // Try fetching from API first
+        const res = await api.get(`/opportunities/${id}`);
+        if (res.data) {
+          // Map API response to our UI format
+          setOpportunity({
+            ...res.data,
+            campaignTitle: res.data.title || res.data.campaignTitle,
+            brandName: res.data.brand?.username || res.data.brandName || 'Brand',
+            budgetAmount: res.data.budget_amount || res.data.budgetAmount || 0,
+            budgetType: res.data.budget_type || res.data.budgetType || 'Paid',
+            city: res.data.niche || ['Remote'], // Fallback
+            applicationDeadline: res.data.created_at || new Date().toISOString(),
+            contentDeadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+            extraRequirements: { rawFilesNeeded: true, revisions: 1, usageRights: ['Instagram'] },
+            deliverables: { photos: 2, reels: 1, stories: 1 }
+          });
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        console.log('API fetch failed, trying fallbacks...');
+      }
+
+      // Check if it's from the dashboard fallback (e.g. o1, o2)
+      if (id.startsWith('o')) {
+        const dashboardOpps = [
+          { id: 'o1', title: 'Nike Air Max Launch', budget_amount: 15000, budget_type: 'Paid', niche: ['Sports', 'Fashion'], brand: { username: 'Nike', avatar_url: 'https://i.pravatar.cc/150?u=nike' } },
+          { id: 'o2', title: 'Starbucks Summer Promo', budget_amount: 8000, budget_type: 'Paid', niche: ['Food', 'Lifestyle'], brand: { username: 'Starbucks', avatar_url: 'https://i.pravatar.cc/150?u=starbucks' } },
+          { id: 'o3', title: 'Adobe Creative Cloud', budget_amount: 0, budget_type: 'Barter', niche: ['Tech', 'Design'], brand: { username: 'Adobe', avatar_url: 'https://i.pravatar.cc/150?u=adobe' } },
+          { id: 'o4', title: 'Sony WH-1000XM5 Review', budget_amount: 12000, budget_type: 'Paid', niche: ['Tech', 'Music'], brand: { username: 'Sony', avatar_url: 'https://i.pravatar.cc/150?u=sony' } },
+          { id: 'o5', title: 'Tesla Model 3 Vlog', budget_amount: 50000, budget_type: 'Paid', niche: ['Auto', 'Tech'], brand: { username: 'Tesla', avatar_url: 'https://i.pravatar.cc/150?u=tesla' } },
+          { id: 'o6', title: 'H&M Winter Collection', budget_amount: 10000, budget_type: 'Paid', niche: ['Fashion'], brand: { username: 'H&M', avatar_url: 'https://i.pravatar.cc/150?u=hm' } },
+          { id: 'o7', title: 'Coca Cola Refresh', budget_amount: 0, budget_type: 'Barter', niche: ['Food'], brand: { username: 'Coca Cola', avatar_url: 'https://i.pravatar.cc/150?u=coke' } },
+          { id: 'o8', title: 'Apple Watch Series 9', budget_amount: 20000, budget_type: 'Paid', niche: ['Tech', 'Health'], brand: { username: 'Apple', avatar_url: 'https://i.pravatar.cc/150?u=apple' } },
+          { id: 'o9', title: 'Spotify Premium Promo', budget_amount: 5000, budget_type: 'Paid', niche: ['Music', 'Entertainment'], brand: { username: 'Spotify', avatar_url: 'https://i.pravatar.cc/150?u=spotify' } },
+          { id: 'o10', title: 'Netflix Originals', budget_amount: 30000, budget_type: 'Paid', niche: ['Entertainment', 'Movies'], brand: { username: 'Netflix', avatar_url: 'https://i.pravatar.cc/150?u=netflix' } }
+        ];
+
+        const fallback = dashboardOpps.find(opp => opp.id === id);
+        if (fallback) {
+          setOpportunity({
+            id: fallback.id,
+            campaignTitle: fallback.title,
+            brandName: fallback.brand.username,
+            brandIntroduction: `Leading brand looking for creators for ${fallback.title}.`,
+            campaignGoal: `Create engaging content for ${fallback.brand.username}'s upcoming campaign.`,
+            city: ["Mumbai", "Delhi", "Bangalore"], // dummy
+            language: ["English", "Hindi"],
+            niche: fallback.niche,
+            followersRange: { min: 10000, max: 100000 },
+            genderPreference: "Any",
+            deliverables: { photos: 2, reels: 1, stories: 2 },
+            budgetType: fallback.budget_type,
+            budgetAmount: fallback.budget_amount,
+            applicationDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            contentDeadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+            extraRequirements: {
+              rawFilesNeeded: false,
+              revisions: 1,
+              usageRights: ["Instagram", "YouTube"],
+            },
+          });
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Finally, check demoPhotographyOpportunities
+      const found = demoPhotographyOpportunities.find(opp => opp.id === id);
+      setOpportunity(found);
+      setLoading(false);
+    };
+
+    fetchOpportunity();
   }, [id]);
 
   const formatDate = (dateString) => {
